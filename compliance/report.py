@@ -19,7 +19,7 @@ console = Console()
 SOC2_CONTROLS = {
     "CC6.1": {
         "title": "Logical Access — Network Isolation",
-        "description": "Restrict logical access to infrastructure via private networking",
+        "description": "Restrict logical access via private networking and ACLs",
         "resources": ["aws_vpc", "aws_subnet", "aws_default_security_group"],
     },
     "CC6.2": {
@@ -34,13 +34,23 @@ SOC2_CONTROLS = {
     },
     "CC7.1": {
         "title": "Threat Detection — Continuous Monitoring",
-        "description": "Monitor for anomalous activity and security events",
-        "resources": ["aws_cloudwatch_metric_alarm", "aws_guardduty_detector"],
+        "description": "Monitor for anomalous activity and compliance drift",
+        "resources": ["aws_cloudwatch_metric_alarm", "aws_config_configuration_recorder", "aws_config_config_rule"],
     },
     "CC7.2": {
         "title": "Audit Logging — Tamper-evident Records",
         "description": "Log all activity with integrity validation and retention",
-        "resources": ["aws_cloudtrail", "aws_s3_bucket_versioning", "aws_s3_bucket_public_access_block"],
+        "resources": ["aws_s3_bucket_versioning", "aws_s3_bucket_public_access_block", "aws_config_delivery_channel"],
+    },
+    "CC6.6": {
+        "title": "Logical Access — Transmission Protection",
+        "description": "Protect data in transit — HTTPS only, deny plaintext",
+        "resources": ["aws_s3_bucket_policy"],
+    },
+    "CC8.1": {
+        "title": "Change Management — IaC Controlled",
+        "description": "All infrastructure changes via version-controlled IaC",
+        "resources": ["aws_iam_role", "aws_config_configuration_recorder_status"],
     },
 }
 
