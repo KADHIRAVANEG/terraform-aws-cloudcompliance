@@ -23,7 +23,6 @@ jobs:
         run: |
           cd terraform
           terraform fmt -check -recursive
-        continue-on-error: false
 
       - name: Terraform Init
         run: |
@@ -48,14 +47,31 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install rich
 
-      - name: Setup LocalStack
-        uses: LocalStack/setup-localstack@v0.2.3
-        with:
-          image-tag: '3.4.0'
-          install-awslocal: 'true'
+      - name: Start LocalStack
+        run: |
+          docker run --rm -d \
+            -p 4566:4566 \
+            -p 4510-4559:4510-4559 \
+            localstack/localstack:3.4.0
+          echo "Waiting for LocalStack to be ready..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:4566/_localstack/health | grep -q '"s3"'; then
+              echo "LocalStack is ready"
+              break
+            fi
+            echo "Attempt $i/30..."
+            sleep 3
+          done
+
+      - name: Configure AWS CLI for LocalStack
+        run: |
+          pip install awscli-local
+          aws configure set aws_access_key_id test
+          aws configure set aws_secret_access_key test
+          aws configure set default.region us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
