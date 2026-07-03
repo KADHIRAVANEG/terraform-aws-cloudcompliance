@@ -1,73 +1,191 @@
+![SOC2 Compliance](https://github.com/KADHIRAVANEG/Cloud-Compliance/actions/workflows/compliance.yml/badge.svg)
+![Terraform](https://img.shields.io/badge/Terraform-1.15.6-7B42BC?logo=terraform)
+![LocalStack](https://img.shields.io/badge/LocalStack-3.4.0-000000?logo=amazon-aws)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 # CloudCompliance — SOC2-Ready AWS IaC
 
-> Infrastructure as Code that provisions a SOC2 Type II-aligned AWS environment 
+> Infrastructure as Code that provisions a SOC2-aligned AWS security baseline
 > in one command. Zero manual security configuration required.
 
-## Problem
-Startups spend 6–12 months retrofitting SOC2 controls onto existing infrastructure.
-This IaC eliminates that retrofit — every control is provisioned at creation time.
+## The Problem
+
+Startups spend 6–12 months retrofitting SOC2 controls onto infrastructure that
+was never designed to be compliant. Security is an afterthought — CloudTrail
+gets enabled after an incident, encryption gets added before an audit, RBAC
+gets tightened only when required.
+
+**This IaC eliminates that retrofit entirely.**
+Every SOC2 control is provisioned automatically at infrastructure creation time.
+
+---
 
 ## SOC2 Control Coverage
 
-| Control | Title                        | Status        |
-|---------|------------------------------|---------------|
-| CC6.1   | Network Isolation            | ✅ Implemented |
-| CC6.2   | Authentication Controls      | ✅ Implemented |
-| CC6.7   | Encryption at rest/transit   | ✅ Implemented |
-| CC7.1   | Threat Detection             | ✅ Implemented |
-| CC7.2   | Audit Logging                | ✅ Implemented |
+| Control | Title                             | Resources Enforced                                              |
+|---------|-----------------------------------|-----------------------------------------------------------------|
+| CC6.1   | Network Isolation                 | VPC, private subnets, deny-all security group                   |
+| CC6.2   | Authentication Controls           | IAM password policy, MFA alert, least-privilege role            |
+| CC6.6   | Transmission Protection           | HTTPS-only S3 bucket policy, TLS enforcement                    |
+| CC6.7   | Encryption at Rest                | KMS CMK, S3 server-side encryption, encrypted data bucket       |
+| CC7.1   | Threat Detection                  | CloudWatch alarms, AWS Config recorder, Config rules            |
+| CC7.2   | Audit Logging                     | Versioned audit bucket, delete protection, Config delivery      |
+| CC8.1   | Change Management                 | IaC-controlled infra, Config recorder status tracking           |
 
-## What Gets Provisioned
 
-- **Networking** — Private VPC, no public subnets, deny-all security group
-- **Logging** — Tamper-proof audit bucket, versioning, delete protection
-- **Encryption** — KMS customer-managed key, S3 encryption, HTTPS-only policy
-- **IAM** — 14-char password policy, 90-day rotation, least-privilege role, root alerts
-- **Monitoring** — CloudWatch alarms for root login and public bucket detection
+> **Scope note:** This IaC implements the *technical infrastructure controls* 
+> mapped to SOC2 Common Criteria CC6-CC8. Full SOC2 Type II certification 
+> additionally requires organizational policies, vendor management, employee 
+> training, and 6-12 months of evidence collection — which are outside the 
+> scope of infrastructure code.
+
+---
+
+## What Gets Provisioned (29 resources)
+
+### Networking — CC6.1
+- Private VPC (`10.0.0.0/16`) with 2 private subnets
+- No public subnets — zero internet exposure by default
+- Default-deny security group — all inbound/outbound blocked
+
+### Logging — CC7.2
+- Dedicated audit S3 bucket with versioning enabled
+- Delete protection policy — no object or bucket deletion allowed
+- HTTPS-only access policy on audit bucket
+
+### Encryption — CC6.7
+- KMS Customer Managed Key (CMK) with automatic key rotation
+- S3 encrypted data bucket with KMS SSE
+- HTTPS-only bucket policy — plaintext requests denied
+
+### IAM — CC6.2
+- Account password policy: 14 chars, complexity, 90-day rotation, 24 history
+- Least-privilege IAM role — S3 read + KMS decrypt only
+- SNS topic for root account usage alerts
+
+### Monitoring — CC7.1
+- CloudWatch alarm: root account login detection
+- CloudWatch alarm: public S3 bucket detection
+- Both wired to SNS alert topic
+
+### Config — CC7.1 + CC7.2
+- AWS Config recorder — all resource types, all regions
+- Config delivery channel → audit S3 bucket
+- Config rules: S3 public read prohibited, S3 encryption required, root MFA
+
+---
 
 ## Quick Start
 
-**Requirements:** Terraform, Docker, LocalStack
+**Requirements:** Terraform ≥ 1.15, Docker
 
 ```bash
-# Start LocalStack
+# 1. Start LocalStack (free local AWS)
 docker run --rm -d -p 4566:4566 localstack/localstack:3.4.0
 
-# Deploy everything
+# 2. Deploy all SOC2 controls
 make deploy
 
-# Generate SOC2 compliance report
+# 3. Generate compliance evidence report
 make report
 ```
 
-## Architecture
+**Expected output:**
+
+```
+╭────────────────────────────────────────╮
+│ CloudCompliance — SOC2 Evidence Report │
+│ Total resources provisioned: 29        │
+╰────────────────────────────────────────╯
+SOC2 Compliance Score: 100% (7/7 controls passing)
+```
+
+---
+
+## Project Structure
+
 ```
 cloudcompliance/
 ├── terraform/
-│   ├── main.tf
+│   ├── main.tf                  # Root — calls all modules
+│   ├── variables.tf             # Environment, region, endpoint
+│   ├── backend.tf               # Local (dev) / S3 (prod) backend
+│   ├── local.tfvars             # LocalStack config
+│   ├── prod.tfvars              # Real AWS config
 │   └── modules/
-│       ├── networking/    # CC6.1 — VPC, private subnets
-│       ├── logging/       # CC7.2 — Audit bucket
-│       ├── encryption/    # CC6.7 — KMS, encrypted S3
-│       ├── iam/           # CC6.2 — Password policy, roles
-│       └── monitoring/    # CC7.1 — CloudWatch alarms
+│       ├── networking/          # CC6.1 — VPC, subnets, SGs
+│       ├── logging/             # CC7.2 — Audit bucket
+│       ├── encryption/          # CC6.7 — KMS, encrypted S3
+│       ├── iam/                 # CC6.2 — Password policy, roles
+│       ├── monitoring/          # CC7.1 — CloudWatch alarms
+│       └── config/              # CC7.1/7.2 — Config rules
 ├── compliance/
-│   └── report.py          # SOC2 evidence generator
-└── Makefile               # make deploy / report / destroy
+│   └── report.py                # SOC2 evidence generator
+├── .github/workflows/
+│   └── compliance.yml           # CI gate — blocks non-compliant PRs
+└── Makefile                     # make deploy / report / destroy
 ```
 
-## Compliance Report Output
+---
 
-Running `make report` generates a terminal report + `compliance_report.json`
-mapping every provisioned resource to its SOC2 Trust Service Criteria.
+## CI/CD Compliance Gate
+
+Every pull request automatically:
+1. Validates Terraform formatting and syntax
+2. Deploys to LocalStack
+3. Runs the compliance report
+4. **Blocks merge if any SOC2 control is missing**
+
+---
+
+## Deploying to Real AWS
+
+```bash
+# 1. Configure AWS credentials
+aws configure
+
+# 2. Deploy to real AWS
+make deploy-prod
+```
+
+For production, uncomment the S3 backend in `terraform/backend.tf`
+to enable remote state with DynamoDB locking.
+
+---
+
+## LocalStack vs Real AWS
+
+| Feature              | LocalStack (free) | Real AWS |
+|----------------------|-------------------|----------|
+| VPC / Subnets        | ✅                | ✅       |
+| S3 + Encryption      | ✅                | ✅       |
+| KMS                  | ✅                | ✅       |
+| IAM                  | ✅                | ✅       |
+| CloudWatch           | ✅                | ✅       |
+| AWS Config           | ✅                | ✅       |
+| SNS                  | ✅                | ✅       |
+| CloudTrail           | ⚠️ Pro only       | ✅       |
+| GuardDuty            | ⚠️ Pro only       | ✅       |
+
+---
 
 ## Standards Referenced
 
-- AICPA SOC2 Trust Services Criteria 2017
-- CIS AWS Foundations Benchmark v2.0
-- NIST SP 800-53 Rev 5
-- AWS Security Reference Architecture 2023
+- [AICPA SOC2 Trust Services Criteria 2017](https://www.aicpa.org/resources/landing/system-and-organization-controls-soc-suite-of-services)
+- [CIS AWS Foundations Benchmark v2.0](https://www.cisecurity.org/benchmark/amazon_web_services)
+- [NIST SP 800-53 Rev 5](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf)
+- [AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/welcome.html)
+
+---
 
 ## Tech Stack
 
-Terraform · AWS (LocalStack) · Python · KMS · IAM · CloudWatch · SNS
+`Terraform` · `Python` · `AWS` · `LocalStack` · `GitHub Actions` · `KMS` · `IAM` · `CloudWatch` · `SNS` · `AWS Config`
+
+---
+
+## Author
+
+**Kadhiravan E.G.** — 3rd year Cybersecurity student  
+GitHub: [@KADHIRAVANEG](https://github.com/KADHIRAVANEG)
