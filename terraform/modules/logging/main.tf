@@ -5,7 +5,7 @@
 
 resource "aws_s3_bucket" "audit_logs" {
   bucket        = "${var.project_name}-audit-logs"
-  force_destroy = true
+  force_destroy = var.environment == "local" ? true : false
 
   tags = {
     Name        = "${var.project_name}-audit-logs"

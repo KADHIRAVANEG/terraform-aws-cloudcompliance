@@ -52,10 +52,12 @@ module "networking" {
 module "logging" {
   source       = "./modules/logging"
   project_name = "cloudcompliance"
+  environment = var.environment
 }
 module "encryption" {
   source       = "./modules/encryption"
   project_name = "cloudcompliance"
+  environment = var.environment
 }
 module "iam" {
   source       = "./modules/iam"
