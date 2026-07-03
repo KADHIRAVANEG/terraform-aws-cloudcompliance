@@ -1,3 +1,4 @@
+[![Terraform Registry](https://img.shields.io/badge/Terraform%20Registry-cloudcompliance-7B42BC?logo=terraform)](https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws/latest)
 ![SOC2 Compliance](https://github.com/KADHIRAVANEG/Cloud-Compliance/actions/workflows/compliance.yml/badge.svg)
 ![Terraform](https://img.shields.io/badge/Terraform-1.15.6-7B42BC?logo=terraform)
 ![LocalStack](https://img.shields.io/badge/LocalStack-3.4.0-000000?logo=amazon-aws)
@@ -90,6 +91,24 @@ make deploy
 # 3. Generate compliance evidence report
 make report
 ```
+## Use as a Terraform Module
+
+```hcl
+module "soc2_baseline" {
+  source  = "KADHIRAVANEG/cloudcompliance/aws"
+  version = "1.0.0"
+
+  project_name = "my-startup"
+  environment  = "prod"
+  aws_region   = "us-east-1"
+}
+```
+
+```bash
+terraform init
+terraform apply
+```
+
 
 **Expected output:**
 
