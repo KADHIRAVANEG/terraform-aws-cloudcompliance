@@ -170,6 +170,45 @@ cloudcompliance/
 └── Makefile                     # make deploy / report / destroy
 ```
 
+## Chart 
+
+```mermaid
+flowchart TD
+    %% Styling Definitions
+    classDef infra fill:#2980b9,stroke:#fff,color:#fff;
+    classDef module fill:#34495e,stroke:#fff,color:#fff;
+    classDef glue fill:#f39c12,stroke:#000,color:#000;
+    classDef comp fill:#27ae60,stroke:#fff,color:#fff;
+
+    %% Orchestration Layer
+    MK[Makefile]:::glue
+    CI[.github/workflows/compliance.yml]:::glue
+
+    %% Terraform Root
+    TF_Root[terraform/]:::infra
+    TF_Root --> Main[main.tf]
+    TF_Root --> Vars[vars/backend.tf]
+    TF_Root --> TFVars[*.tfvars]
+
+    %% Module Layer
+    TF_Root --> Mod[modules/]:::module
+    Mod --> N[networking - CC6.1]:::module
+    Mod --> L[logging - CC7.2]:::module
+    Mod --> E[encryption - CC6.7]:::module
+    Mod --> I[iam - CC6.2]:::module
+    Mod --> M[monitoring - CC7.1]:::module
+    Mod --> C[config - CC7.1/7.2]:::module
+
+    %% Compliance Evidence Layer
+    Comp[compliance/report.py]:::comp
+
+    %% Connections
+    MK -->|deploy| TF_Root
+    MK -->|report| Comp
+    CI -->|gate| TF_Root
+    CI -->|audit| Comp
+```
+
 ---
 
 ## CI/CD Compliance Gate
