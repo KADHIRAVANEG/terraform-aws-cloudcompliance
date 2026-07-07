@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: cloudcompliance
-Version: 1.0.0
+Version: 1.1.0
 Summary: SOC2 compliance evidence generator for Terraform AWS infrastructure
 Author-email: "Kadhiravan E.G." <kadhiravaneg@gmail.com>
 License-Expression: MIT
@@ -17,6 +17,9 @@ License-File: LICENSE
 Requires-Dist: rich>=12.0.0
 Dynamic: license-file
 
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io-2496ED?logo=docker)](https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/pkgs/container/terraform-aws-cloudcompliance)
+[![PyPI version](https://img.shields.io/pypi/v/cloudcompliance?color=blue)](https://pypi.org/project/cloudcompliance/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/cloudcompliance)](https://pypi.org/project/cloudcompliance/)
 [![Terraform Registry](https://img.shields.io/badge/Terraform%20Registry-cloudcompliance-7B42BC?logo=terraform)](https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws/latest)
 ![SOC2 Compliance](https://github.com/KADHIRAVANEG/Cloud-Compliance/actions/workflows/compliance.yml/badge.svg)
 ![Terraform](https://img.shields.io/badge/Terraform-1.15.6-7B42BC?logo=terraform)
@@ -26,7 +29,7 @@ Dynamic: license-file
 
 # CloudCompliance — SOC2-Ready AWS IaC
 
-> Infrastructure as Code that provisions a SOC2 Type II-aligned AWS environment
+> Infrastructure as Code that provisions a SOC2-aligned AWS security baseline
 > in one command. Zero manual security configuration required.
 
 ## The Problem
@@ -127,6 +130,27 @@ module "soc2_baseline" {
 terraform init
 terraform apply
 ```
+## Install the CLI
+
+```bash
+pip install cloudcompliance
+cloudcompliance
+```
+
+## Docker Usage
+
+```bash
+# Pull the image
+docker pull ghcr.io/kadhiravaneg/terraform-aws-cloudcompliance:latest
+
+# Run against your terraform state
+docker run -v /path/to/your/terraform:/app/terraform \
+  ghcr.io/kadhiravaneg/terraform-aws-cloudcompliance:latest
+
+# Run against this repo's state
+docker run -v ~/cloudcompliance/terraform:/app/terraform \
+  ghcr.io/kadhiravaneg/terraform-aws-cloudcompliance:latest
+```
 
 
 **Expected output:**
@@ -163,6 +187,45 @@ cloudcompliance/
 ├── .github/workflows/
 │   └── compliance.yml           # CI gate — blocks non-compliant PRs
 └── Makefile                     # make deploy / report / destroy
+```
+
+## Chart 
+
+```mermaid
+flowchart TD
+    %% Styling Definitions
+    classDef infra fill:#2980b9,stroke:#fff,color:#fff;
+    classDef module fill:#34495e,stroke:#fff,color:#fff;
+    classDef glue fill:#f39c12,stroke:#000,color:#000;
+    classDef comp fill:#27ae60,stroke:#fff,color:#fff;
+
+    %% Orchestration Layer
+    MK[Makefile]:::glue
+    CI[.github/workflows/compliance.yml]:::glue
+
+    %% Terraform Root
+    TF_Root[terraform/]:::infra
+    TF_Root --> Main[main.tf]
+    TF_Root --> Vars[vars/backend.tf]
+    TF_Root --> TFVars[*.tfvars]
+
+    %% Module Layer
+    TF_Root --> Mod[modules/]:::module
+    Mod --> N[networking - CC6.1]:::module
+    Mod --> L[logging - CC7.2]:::module
+    Mod --> E[encryption - CC6.7]:::module
+    Mod --> I[iam - CC6.2]:::module
+    Mod --> M[monitoring - CC7.1]:::module
+    Mod --> C[config - CC7.1/7.2]:::module
+
+    %% Compliance Evidence Layer
+    Comp[compliance/report.py]:::comp
+
+    %% Connections
+    MK -->|deploy| TF_Root
+    MK -->|report| Comp
+    CI -->|gate| TF_Root
+    CI -->|audit| Comp
 ```
 
 ---

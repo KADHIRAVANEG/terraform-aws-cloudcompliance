@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudcompliance"
-version = "1.0.0"
+version = "1.1.0"
 description = "SOC2 compliance evidence generator for Terraform AWS infrastructure"
 readme = "README.md"
 license = "MIT"
