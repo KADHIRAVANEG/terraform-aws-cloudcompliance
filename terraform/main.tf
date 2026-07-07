@@ -23,16 +23,17 @@ provider "aws" {
   dynamic "endpoints" {
     for_each = local.is_local ? [1] : []
     content {
-      s3             = var.localstack_endpoint
-      cloudtrail     = var.localstack_endpoint
-      kms            = var.localstack_endpoint
-      iam            = var.localstack_endpoint
-      ec2            = var.localstack_endpoint
-      config         = var.localstack_endpoint
-      sns            = var.localstack_endpoint
-      cloudwatch     = var.localstack_endpoint
-      cloudwatchlogs = var.localstack_endpoint
-
+      s3              = var.localstack_endpoint
+      cloudtrail      = var.localstack_endpoint
+      kms             = var.localstack_endpoint
+      iam             = var.localstack_endpoint
+      ec2             = var.localstack_endpoint
+      config          = var.localstack_endpoint
+      sns             = var.localstack_endpoint
+      cloudwatch      = var.localstack_endpoint
+      cloudwatchlogs  = var.localstack_endpoint
+      accessanalyzer  = var.localstack_endpoint
+      backup          = var.localstack_endpoint
     }
   }
 }
@@ -74,4 +75,20 @@ module "config" {
   source          = "./modules/config"
   project_name    = "cloudcompliance"
   audit_bucket_id = module.logging.audit_bucket_id
+}
+module "access_analyzer" {
+  source        = "./modules/access_analyzer"
+  project_name  = var.project_name
+  sns_topic_arn = module.iam.root_alert_topic_arn
+}
+
+module "incident_response" {
+  source        = "./modules/incident_response"
+  project_name  = var.project_name
+  sns_topic_arn = module.iam.root_alert_topic_arn
+}
+
+module "availability" {
+  source       = "./modules/availability"
+  project_name = var.project_name
 }

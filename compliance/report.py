@@ -15,7 +15,6 @@ from rich import box
 
 console = Console()
 
-# SOC2 control definitions
 SOC2_CONTROLS = {
     "CC6.1": {
         "title": "Logical Access — Network Isolation",
@@ -26,6 +25,16 @@ SOC2_CONTROLS = {
         "title": "Logical Access — Authentication Controls",
         "description": "Enforce strong authentication, password policy, least privilege",
         "resources": ["aws_iam_account_password_policy", "aws_iam_role", "aws_iam_policy", "aws_sns_topic"],
+    },
+    "CC6.3": {
+        "title": "Logical Access — Access Revocation",
+        "description": "Detect and alert on overly permissive IAM and resource policies",
+        "resources": ["aws_iam_role_policy", "aws_cloudwatch_metric_alarm"],
+    },
+    "CC6.6": {
+        "title": "Logical Access — Transmission Protection",
+        "description": "Protect data in transit — HTTPS only, deny plaintext",
+        "resources": ["aws_s3_bucket_policy"],
     },
     "CC6.7": {
         "title": "Encryption — Data Protection",
@@ -42,17 +51,23 @@ SOC2_CONTROLS = {
         "description": "Log all activity with integrity validation and retention",
         "resources": ["aws_s3_bucket_versioning", "aws_s3_bucket_public_access_block", "aws_config_delivery_channel", "aws_flow_log", "aws_cloudwatch_log_group"],
     },
-    "CC6.6": {
-        "title": "Logical Access — Transmission Protection",
-        "description": "Protect data in transit — HTTPS only, deny plaintext",
-        "resources": ["aws_s3_bucket_policy"],
+    "CC7.3": {
+        "title": "Incident Response — Security Event Detection",
+        "description": "Detect and alert on unauthorized access and security incidents",
+        "resources": ["aws_cloudwatch_log_metric_filter", "aws_cloudwatch_log_group"],
     },
     "CC8.1": {
         "title": "Change Management — IaC Controlled",
         "description": "All infrastructure changes via version-controlled IaC",
         "resources": ["aws_iam_role", "aws_config_configuration_recorder_status"],
     },
+    "A1.1": {
+        "title": "Availability — Backup and Retention",
+        "description": "Ensure data availability via versioning, retention, and backup policies",
+        "resources": ["aws_s3_bucket_versioning", "aws_iam_role_policy_attachment"],
+    },
 }
+
 
 def load_tfstate(path: str) -> dict:
     tfstate_path = Path(path)
@@ -61,6 +76,7 @@ def load_tfstate(path: str) -> dict:
         sys.exit(1)
     with open(tfstate_path) as f:
         return json.load(f)
+
 
 def extract_resources(tfstate: dict) -> list:
     resources = []
@@ -75,21 +91,19 @@ def extract_resources(tfstate: dict) -> list:
         })
     return resources
 
+
 def evaluate_controls(resources: list) -> dict:
     found_types = set(r["type"] for r in resources)
     results = {}
-
     for control_id, control in SOC2_CONTROLS.items():
         matched = [t for t in control["resources"] if t in found_types]
         missing = [t for t in control["resources"] if t not in found_types]
-
         if len(matched) == len(control["resources"]):
             status = "PASS"
         elif len(matched) > 0:
             status = "PARTIAL"
         else:
             status = "FAIL"
-
         results[control_id] = {
             "title": control["title"],
             "description": control["description"],
@@ -97,8 +111,36 @@ def evaluate_controls(resources: list) -> dict:
             "matched": matched,
             "missing": missing,
         }
-
     return results
+
+
+def save_markdown(results: dict, resources: list, score: int, pass_count: int):
+    md_path = Path(__file__).parent / "compliance_report.md"
+    with open(md_path, "w") as f:
+        f.write("# CloudCompliance — SOC2 Evidence Report\n\n")
+        f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  \n")
+        f.write(f"**Total resources provisioned:** {len(resources)}  \n")
+        f.write(f"**Compliance score:** {score}% ({pass_count}/{len(results)} controls passing)\n\n")
+        f.write("## Control Coverage\n\n")
+        f.write("| Control | Title | Status | Matched Resources |\n")
+        f.write("|---------|-------|--------|-------------------|\n")
+        for control_id, result in results.items():
+            if result["status"] == "PASS":
+                status_md = "✅ PASS"
+            elif result["status"] == "PARTIAL":
+                status_md = "⚠️ PARTIAL"
+            else:
+                status_md = "❌ FAIL"
+            matched = ", ".join(result["matched"][:3]) if result["matched"] else "none"
+            f.write(f"| {control_id} | {result['title']} | {status_md} | {matched} |\n")
+        f.write(f"\n## Summary\n\n")
+        f.write(f"SOC2 Compliance Score: **{score}%** ({pass_count}/{len(results)} controls passing)\n\n")
+        f.write("## Standards Referenced\n\n")
+        f.write("- AICPA SOC2 Trust Services Criteria 2017\n")
+        f.write("- CIS AWS Foundations Benchmark v2.0\n")
+        f.write("- NIST SP 800-53 Rev 5\n")
+    console.print(f"[dim]Markdown report → {md_path}[/dim]")
+
 
 def print_report(results: dict, resources: list):
     console.print()
@@ -110,7 +152,6 @@ def print_report(results: dict, resources: list):
     ))
     console.print()
 
-    # Control summary table
     table = Table(box=box.ROUNDED, show_header=True, header_style="bold magenta")
     table.add_column("Control", style="cyan", width=8)
     table.add_column("Title", width=35)
@@ -127,14 +168,12 @@ def print_report(results: dict, resources: list):
             status_str = "[yellow]⚠️  PARTIAL[/yellow]"
         else:
             status_str = "[red]❌ FAIL[/red]"
-
         matched_str = ", ".join(result["matched"]) if result["matched"] else "[dim]none[/dim]"
         table.add_row(control_id, result["title"], status_str, matched_str)
 
     console.print(table)
     console.print()
 
-    # Score
     score = int((pass_count / len(results)) * 100)
     color = "green" if score >= 80 else "yellow" if score >= 50 else "red"
     console.print(Panel.fit(
@@ -142,7 +181,6 @@ def print_report(results: dict, resources: list):
         border_style=color
     ))
 
-    # Missing resources
     missing_any = [(cid, r) for cid, r in results.items() if r["missing"]]
     if missing_any:
         console.print()
@@ -151,7 +189,6 @@ def print_report(results: dict, resources: list):
             for m in result["missing"]:
                 console.print(f"  [dim]{control_id}[/dim] → [red]{m}[/red]")
 
-    # Save JSON evidence
     output = {
         "generated_at": datetime.now().isoformat(),
         "total_resources": len(resources),
@@ -164,14 +201,17 @@ def print_report(results: dict, resources: list):
     console.print()
     console.print(f"[dim]Evidence saved → {output_path}[/dim]")
 
+    save_markdown(results, resources, score, pass_count)
+
+
 def main():
     tfstate_path = Path(__file__).parent.parent / "terraform" / "terraform.tfstate"
     console.print(f"[dim]Reading state from: {tfstate_path}[/dim]")
-
     tfstate = load_tfstate(str(tfstate_path))
     resources = extract_resources(tfstate)
     results = evaluate_controls(resources)
     print_report(results, resources)
+
 
 if __name__ == "__main__":
     main()
