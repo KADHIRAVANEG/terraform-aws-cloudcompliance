@@ -12,6 +12,7 @@
 
 > Infrastructure as Code that provisions a SOC2-aligned AWS security baseline
 > in one command. Zero manual security configuration required.
+> with 10 controls and 46 AWS resources — deployable in one command.
 
 ## The Problem
 
@@ -40,7 +41,6 @@ Every SOC2 control is provisioned automatically at infrastructure creation time.
 | CC8.1 | Change Management | IaC-controlled infra, Config recorder status |
 | A1.1 | Availability | S3 versioning, retention policies, backup role |
 
-> **10 controls, 46 AWS resources, 100% compliance score**
 
 > **Scope note:** This IaC implements the *technical infrastructure controls* 
 > mapped to SOC2 Common Criteria CC6-CC8. Full SOC2 Type II certification 
@@ -50,37 +50,53 @@ Every SOC2 control is provisioned automatically at infrastructure creation time.
 
 ---
 
-## What Gets Provisioned (29 resources)
+## What Gets Provisioned (46 resources across 9 modules)
 
 ### Networking — CC6.1
 - Private VPC (`10.0.0.0/16`) with 2 private subnets
 - No public subnets — zero internet exposure by default
-- Default-deny security group — all inbound/outbound blocked
+- Default-deny security group
+- VPC Flow Logs → CloudWatch (90-day retention)
 
 ### Logging — CC7.2
-- Dedicated audit S3 bucket with versioning enabled
-- Delete protection policy — no object or bucket deletion allowed
-- HTTPS-only access policy on audit bucket
+- Dedicated audit S3 bucket with versioning
+- Delete protection + HTTPS-only policy
+- AWS Config delivery channel
 
 ### Encryption — CC6.7
-- KMS Customer Managed Key (CMK) with automatic key rotation
+- KMS Customer Managed Key with automatic rotation
 - S3 encrypted data bucket with KMS SSE
-- HTTPS-only bucket policy — plaintext requests denied
+- HTTPS-only bucket policy
 
-### IAM — CC6.2
-- Account password policy: 14 chars, complexity, 90-day rotation, 24 history
+### IAM — CC6.2 + CC6.3
+- Password policy: 14 chars, complexity, 90-day rotation
 - Least-privilege IAM role — S3 read + KMS decrypt only
-- SNS topic for root account usage alerts
+- Access analyzer role + findings alarm
+- SNS topic for root account alerts
 
 ### Monitoring — CC7.1
-- CloudWatch alarm: root account login detection
-- CloudWatch alarm: public S3 bucket detection
-- Both wired to SNS alert topic
+- CloudWatch alarms: root login, public bucket detection
+- AWS Config recorder — all resource types
+- Config rules: S3 public read prohibited, S3 encryption required, root MFA
+
+### Incident Response — CC7.3
+- CloudWatch log group for security events (365-day retention)
+- Log metric filters: unauthorized API calls, console sign-in failures
+- CloudWatch alarms wired to SNS for both filters
+
+### Availability — A1.1
+- Versioned availability logs bucket
+- Public access blocked
+- Backup IAM role
 
 ### Config — CC7.1 + CC7.2
-- AWS Config recorder — all resource types, all regions
-- Config delivery channel → audit S3 bucket
-- Config rules: S3 public read prohibited, S3 encryption required, root MFA
+- AWS Config recorder + delivery channel
+- 3 managed Config rules
+
+### Change Management — CC8.1
+- All resources IaC-controlled via Terraform
+- Config recorder status tracking
+- CI/CD gate on every PR
 
 ---
 
@@ -215,13 +231,13 @@ flowchart TD
 
 ---
 
-## CI/CD Compliance Gate
+## CI/CD Pipeline
 
-Every pull request automatically:
-1. Validates Terraform formatting and syntax
-2. Deploys to LocalStack
-3. Runs the compliance report
-4. **Blocks merge if any SOC2 control is missing**
+Every pull request automatically runs:
+
+1. **Terraform Validate** — format + syntax check
+2. **Checkov Security Scan** — static analysis against 500+ security rules
+3. **SOC2 Compliance Check** — deploys to LocalStack, runs report, blocks if score < 100%
 
 ---
 
@@ -255,6 +271,12 @@ to enable remote state with DynamoDB locking.
 | GuardDuty            | ⚠️ Pro only       | ✅       |
 
 ---
+
+> **Honest scope:** This IaC implements the *technical infrastructure controls*
+> for SOC2 Common Criteria CC6–CC8 and Availability A1. Full SOC2 Type II
+> certification additionally requires organizational policies, vendor management,
+> employee training, and 6–12 months of evidence collection — which are outside
+> the scope of any IaC tool.
 
 ## Standards Referenced
 
