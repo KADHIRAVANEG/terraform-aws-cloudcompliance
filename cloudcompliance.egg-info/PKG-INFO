@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: cloudcompliance
-Version: 1.1.0
+Version: 1.2.0
 Summary: SOC2 compliance evidence generator for Terraform AWS infrastructure
 Author-email: "Kadhiravan E.G." <kadhiravaneg@gmail.com>
 License-Expression: MIT
