@@ -65,7 +65,12 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install rich
-
+         
+      - name: Install Python dependencies
+        run: |
+          pip install rich boto3
+          pip install -e .
+     
       - name: Start LocalStack
         run: |
           docker run --rm -d \
@@ -102,6 +107,10 @@ jobs:
 
       - name: Run Compliance Report
         run: python compliance/report.py
+      
+      - name: Run Drift Detection
+        run: cloudcompliance drift --endpoint http://localhost:4566
+        continue-on-error: true
 
       - name: Check Compliance Score
         run: |

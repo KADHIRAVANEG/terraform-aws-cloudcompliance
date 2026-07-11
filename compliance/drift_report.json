@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-07-11T07:50:19.073533",
+  "drift_count": 1,
+  "findings": [
+    {
+      "resource": "aws_s3_bucket.encrypted_data",
+      "resource_id": "cloudcompliance-encrypted-data",
+      "drift_type": "DELETED",
+      "severity": "HIGH",
+      "description": "S3 bucket 'cloudcompliance-encrypted-data' exists in Terraform state but not in AWS",
+      "remediation": "Run 'terraform apply' to recreate or 'terraform state rm aws_s3_bucket.encrypted_data' to remove from state"
+    }
+  ]
+}

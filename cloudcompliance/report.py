@@ -162,10 +162,37 @@ def run(tfstate_path: str = None, output_path: str = None):
     results = evaluate_controls(resources)
     print_report(results, resources, Path(output_path) if output_path else None)
 
-
 def main():
-    run()
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="CloudCompliance — SOC2 evidence and drift detection"
+    )
+    subparsers = parser.add_subparsers(dest="command")
 
+    subparsers.add_parser("report", help="Generate SOC2 compliance evidence report")
 
-if __name__ == "__main__":
-    main()
+    drift_parser = subparsers.add_parser("drift", help="Detect infrastructure drift")
+    drift_parser.add_argument(
+        "--endpoint",
+        default="http://localhost:4566",
+        help="AWS endpoint URL (default: LocalStack)"
+    )
+
+    args = parser.parse_args()
+
+    tfstate_path = Path(__file__).parent.parent / "terraform" / "terraform.tfstate"
+
+    if args.command == "drift":
+        from cloudcompliance.drift.detector import DriftDetector
+        detector = DriftDetector(
+            tfstate_path=str(tfstate_path),
+            endpoint_url=args.endpoint
+        )
+        drift_count = detector.run()
+        sys.exit(1 if drift_count > 0 else 0)
+    else:
+        console.print(f"[dim]Reading state from: {tfstate_path}[/dim]")
+        tfstate = load_tfstate(str(tfstate_path))
+        resources = extract_resources(tfstate)
+        results = evaluate_controls(resources)
+        print_report(results, resources)
