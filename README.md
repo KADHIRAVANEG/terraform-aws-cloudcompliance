@@ -8,6 +8,14 @@
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+
+## What's new in v1.2.0
+
+- **Drift detection** — `cloudcompliance drift` catches when AWS resources change outside Terraform
+- **SNS alerts** — automatic notification when drift is found
+- **Drift report** — `compliance/drift_report.json` with remediation steps
+- **CI integration** — drift check runs on every PR alongside compliance gate
+
 # CloudCompliance — SOC2-Ready AWS IaC
 
 > Infrastructure as Code that provisions a SOC2-aligned AWS security baseline
@@ -102,10 +110,10 @@ Every SOC2 control is provisioned automatically at infrastructure creation time.
 
 ## Quick Start
 
-**Requirements:** Terraform ≥ 1.15, Docker
+**Requirements:** Terraform, Docker
 
 ```bash
-# 1. Start LocalStack (free local AWS)
+# 1. Start LocalStack
 docker run --rm -d -p 4566:4566 localstack/localstack:3.4.0
 
 # 2. Deploy all SOC2 controls
@@ -113,7 +121,12 @@ make deploy
 
 # 3. Generate compliance evidence report
 make report
+
+# 4. Check for infrastructure drift
+make drift
 ```
+
+
 ## Use as a Terraform Module
 
 ```hcl
@@ -135,7 +148,13 @@ terraform apply
 
 ```bash
 pip install cloudcompliance
-cloudcompliance
+cloudcompliance report
+
+# Detect infrastructure drift
+cloudcompliance drift
+
+# Detect drift against real AWS
+cloudcompliance drift --endpoint ""
 ```
 
 ## Docker Usage
