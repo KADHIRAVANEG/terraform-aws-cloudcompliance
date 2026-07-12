@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 CloudCompliance — SOC2 Evidence Report Generator
+Reads terraform.tfstate and maps resources to SOC2 Trust Service Criteria
 """
 
 import json
@@ -25,6 +26,16 @@ SOC2_CONTROLS = {
         "description": "Enforce strong authentication, password policy, least privilege",
         "resources": ["aws_iam_account_password_policy", "aws_iam_role", "aws_iam_policy", "aws_sns_topic"],
     },
+    "CC6.3": {
+        "title": "Logical Access — Access Revocation",
+        "description": "Detect and alert on overly permissive IAM and resource policies",
+        "resources": ["aws_iam_role_policy", "aws_cloudwatch_metric_alarm"],
+    },
+    "CC6.6": {
+        "title": "Logical Access — Transmission Protection",
+        "description": "Protect data in transit — HTTPS only, deny plaintext",
+        "resources": ["aws_s3_bucket_policy"],
+    },
     "CC6.7": {
         "title": "Encryption — Data Protection",
         "description": "Encrypt data at rest and in transit using KMS and HTTPS",
@@ -40,15 +51,20 @@ SOC2_CONTROLS = {
         "description": "Log all activity with integrity validation and retention",
         "resources": ["aws_s3_bucket_versioning", "aws_s3_bucket_public_access_block", "aws_config_delivery_channel", "aws_flow_log", "aws_cloudwatch_log_group"],
     },
-    "CC6.6": {
-        "title": "Logical Access — Transmission Protection",
-        "description": "Protect data in transit — HTTPS only, deny plaintext",
-        "resources": ["aws_s3_bucket_policy"],
+    "CC7.3": {
+        "title": "Incident Response — Security Event Detection",
+        "description": "Detect and alert on unauthorized access and security incidents",
+        "resources": ["aws_cloudwatch_log_metric_filter", "aws_cloudwatch_log_group"],
     },
     "CC8.1": {
         "title": "Change Management — IaC Controlled",
         "description": "All infrastructure changes via version-controlled IaC",
         "resources": ["aws_iam_role", "aws_config_configuration_recorder_status"],
+    },
+    "A1.1": {
+        "title": "Availability — Backup and Retention",
+        "description": "Ensure data availability via versioning, retention, and backup policies",
+        "resources": ["aws_s3_bucket_versioning", "aws_iam_role_policy_attachment"],
     },
 }
 
@@ -98,6 +114,34 @@ def evaluate_controls(resources: list) -> dict:
     return results
 
 
+def save_markdown(results: dict, resources: list, score: int, pass_count: int):
+    md_path = Path(__file__).parent.parent / "compliance" / "compliance_report.md"
+    with open(md_path, "w") as f:
+        f.write("# CloudCompliance — SOC2 Evidence Report\n\n")
+        f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  \n")
+        f.write(f"**Total resources provisioned:** {len(resources)}  \n")
+        f.write(f"**Compliance score:** {score}% ({pass_count}/{len(results)} controls passing)\n\n")
+        f.write("## Control Coverage\n\n")
+        f.write("| Control | Title | Status | Matched Resources |\n")
+        f.write("|---------|-------|--------|-------------------|\n")
+        for control_id, result in results.items():
+            if result["status"] == "PASS":
+                status_md = "✅ PASS"
+            elif result["status"] == "PARTIAL":
+                status_md = "⚠️ PARTIAL"
+            else:
+                status_md = "❌ FAIL"
+            matched = ", ".join(result["matched"][:3]) if result["matched"] else "none"
+            f.write(f"| {control_id} | {result['title']} | {status_md} | {matched} |\n")
+        f.write(f"\n## Summary\n\n")
+        f.write(f"SOC2 Compliance Score: **{score}%** ({pass_count}/{len(results)} controls passing)\n\n")
+        f.write("## Standards Referenced\n\n")
+        f.write("- AICPA SOC2 Trust Services Criteria 2017\n")
+        f.write("- CIS AWS Foundations Benchmark v2.0\n")
+        f.write("- NIST SP 800-53 Rev 5\n")
+    console.print(f"[dim]Markdown report → {md_path}[/dim]")
+
+
 def print_report(results: dict, resources: list, output_path: Path = None):
     console.print()
     console.print(Panel.fit(
@@ -137,6 +181,14 @@ def print_report(results: dict, resources: list, output_path: Path = None):
         border_style=color
     ))
 
+    missing_any = [(cid, r) for cid, r in results.items() if r["missing"]]
+    if missing_any:
+        console.print()
+        console.print("[bold yellow]Resources to add for full compliance:[/bold yellow]")
+        for control_id, result in missing_any:
+            for m in result["missing"]:
+                console.print(f"  [dim]{control_id}[/dim] → [red]{m}[/red]")
+
     output = {
         "generated_at": datetime.now().isoformat(),
         "total_resources": len(resources),
@@ -152,6 +204,12 @@ def print_report(results: dict, resources: list, output_path: Path = None):
     console.print()
     console.print(f"[dim]Evidence saved → {output_path}[/dim]")
 
+    save_markdown(results, resources, score, pass_count)
+
+    # Save to history database
+    from cloudcompliance.history import save_score
+    save_score(output_path)
+
 
 def run(tfstate_path: str = None, output_path: str = None):
     if tfstate_path is None:
@@ -162,10 +220,11 @@ def run(tfstate_path: str = None, output_path: str = None):
     results = evaluate_controls(resources)
     print_report(results, resources, Path(output_path) if output_path else None)
 
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="CloudCompliance — SOC2 evidence and drift detection"
+        description="CloudCompliance — SOC2 evidence, drift detection and history"
     )
     subparsers = parser.add_subparsers(dest="command")
 
@@ -176,6 +235,19 @@ def main():
         "--endpoint",
         default="http://localhost:4566",
         help="AWS endpoint URL (default: LocalStack)"
+    )
+
+    history_parser = subparsers.add_parser("history", help="Show compliance score history")
+    history_parser.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Number of entries to show (default: 10)"
+    )
+    history_parser.add_argument(
+        "--export",
+        action="store_true",
+        help="Export history as JSON for auditors"
     )
 
     args = parser.parse_args()
@@ -190,9 +262,20 @@ def main():
         )
         drift_count = detector.run()
         sys.exit(1 if drift_count > 0 else 0)
+
+    elif args.command == "history":
+        from cloudcompliance.history import show_history, export_history
+        show_history(limit=args.limit)
+        if args.export:
+            export_history()
+
     else:
         console.print(f"[dim]Reading state from: {tfstate_path}[/dim]")
         tfstate = load_tfstate(str(tfstate_path))
         resources = extract_resources(tfstate)
         results = evaluate_controls(resources)
         print_report(results, resources)
+
+
+if __name__ == "__main__":
+    main()

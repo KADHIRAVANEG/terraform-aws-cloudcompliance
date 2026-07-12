@@ -1,6 +1,6 @@
 # CloudCompliance — SOC2 Evidence Report
 
-**Generated:** 2026-07-07 09:30:02  
+**Generated:** 2026-07-12 12:16:02  
 **Total resources provisioned:** 46  
 **Compliance score:** 100% (10/10 controls passing)
 

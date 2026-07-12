@@ -1,0 +1,27 @@
+{
+  "exported_at": "2026-07-12T12:16:51.212458",
+  "entry_count": 3,
+  "entries": [
+    {
+      "timestamp": "2026-07-12T12:16:02.611275",
+      "score": 100,
+      "controls_passing": 10,
+      "controls_total": 10,
+      "resources_count": 46
+    },
+    {
+      "timestamp": "2026-07-12T12:16:02.684269",
+      "score": 100,
+      "controls_passing": 10,
+      "controls_total": 10,
+      "resources_count": 46
+    },
+    {
+      "timestamp": "2026-07-12T12:16:02.759194",
+      "score": 100,
+      "controls_passing": 10,
+      "controls_total": 10,
+      "resources_count": 46
+    }
+  ]
+}
