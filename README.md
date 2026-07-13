@@ -1,26 +1,18 @@
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io-2496ED?logo=docker)](https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/pkgs/container/terraform-aws-cloudcompliance)
+![SOC2 Compliance](https://github.com/KADHIRAVANEG/cloudcompliance/actions/workflows/compliance.yml/badge.svg)
+[![Terraform Registry](https://img.shields.io/badge/Terraform%20Registry-cloudcompliance-7B42BC?logo=terraform)](https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws/latest)
 [![PyPI version](https://img.shields.io/pypi/v/cloudcompliance?color=blue)](https://pypi.org/project/cloudcompliance/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/cloudcompliance)](https://pypi.org/project/cloudcompliance/)
-[![Terraform Registry](https://img.shields.io/badge/Terraform%20Registry-cloudcompliance-7B42BC?logo=terraform)](https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws/latest)
-![SOC2 Compliance](https://github.com/KADHIRAVANEG/Cloud-Compliance/actions/workflows/compliance.yml/badge.svg)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io-2496ED?logo=docker)](https://github.com/KADHIRAVANEG/cloudcompliance/pkgs/container/cloudcompliance)
 ![Terraform](https://img.shields.io/badge/Terraform-1.15.6-7B42BC?logo=terraform)
 ![LocalStack](https://img.shields.io/badge/LocalStack-3.4.0-000000?logo=amazon-aws)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-
-## What's new in v1.2.0
-
-- **Drift detection** — `cloudcompliance drift` catches when AWS resources change outside Terraform
-- **SNS alerts** — automatic notification when drift is found
-- **Drift report** — `compliance/drift_report.json` with remediation steps
-- **CI integration** — drift check runs on every PR alongside compliance gate
-
 # CloudCompliance — SOC2-Ready AWS IaC
 
 > Infrastructure as Code that provisions a SOC2-aligned AWS security baseline
-> in one command. Zero manual security configuration required.
-> with 10 controls and 46 AWS resources — deployable in one command.
+> with 10 controls and 46 resources — deployable in one command.
+> Includes drift detection, AI compliance assistant, score history and auto-remediation.
 
 ## The Problem
 
@@ -31,6 +23,39 @@ gets tightened only when required.
 
 **This IaC eliminates that retrofit entirely.**
 Every SOC2 control is provisioned automatically at infrastructure creation time.
+
+> **Scope note:** This IaC implements the *technical infrastructure controls*
+> mapped to SOC2 Common Criteria CC6–CC8 and Availability A1. Full SOC2 Type II
+> certification additionally requires organizational policies, vendor management,
+> employee training, and 6–12 months of evidence collection.
+
+---
+
+## CLI Commands
+
+```bash
+# Deploy SOC2 baseline
+make deploy
+
+# Generate compliance evidence report
+cloudcompliance report
+
+# Detect infrastructure drift
+cloudcompliance drift
+
+# Auto-remediate drift findings
+cloudcompliance remediate
+cloudcompliance remediate --dry-run
+
+# View compliance score history (SOC2 Type II evidence)
+cloudcompliance history
+cloudcompliance history --export
+
+# Ask AI about your compliance state
+cloudcompliance ask "am I ready for a SOC2 audit?"
+cloudcompliance ask "what is my biggest security risk?"
+cloudcompliance ask "explain CC7.2 and how I implement it"
+```
 
 ---
 
@@ -49,12 +74,7 @@ Every SOC2 control is provisioned automatically at infrastructure creation time.
 | CC8.1 | Change Management | IaC-controlled infra, Config recorder status |
 | A1.1 | Availability | S3 versioning, retention policies, backup role |
 
-
-> **Scope note:** This IaC implements the *technical infrastructure controls* 
-> mapped to SOC2 Common Criteria CC6-CC8. Full SOC2 Type II certification 
-> additionally requires organizational policies, vendor management, employee 
-> training, and 6-12 months of evidence collection — which are outside the 
-> scope of infrastructure code.
+> **10 controls · 46 AWS resources · 100% compliance score**
 
 ---
 
@@ -90,7 +110,7 @@ Every SOC2 control is provisioned automatically at infrastructure creation time.
 ### Incident Response — CC7.3
 - CloudWatch log group for security events (365-day retention)
 - Log metric filters: unauthorized API calls, console sign-in failures
-- CloudWatch alarms wired to SNS for both filters
+- CloudWatch alarms wired to SNS
 
 ### Availability — A1.1
 - Versioned availability logs bucket
@@ -110,103 +130,125 @@ Every SOC2 control is provisioned automatically at infrastructure creation time.
 
 ## Quick Start
 
-**Requirements:** Terraform, Docker
+**Requirements:** Terraform, Docker, Python 3.9+
 
 ```bash
-# 1. Start LocalStack
+# Install CLI
+pip install cloudcompliance
+
+# Start LocalStack (free local AWS)
 docker run --rm -d -p 4566:4566 localstack/localstack:3.4.0
 
-# 2. Deploy all SOC2 controls
+# Deploy all SOC2 controls
 make deploy
 
-# 3. Generate compliance evidence report
+# Generate compliance evidence report
 make report
 
-# 4. Check for infrastructure drift
+# Check for drift
 make drift
+
+# Auto-remediate
+make remediate
 ```
 
+---
 
-## Use as a Terraform Module
+## Auto-Remediation
 
-```hcl
-module "soc2_baseline" {
-  source  = "KADHIRAVANEG/cloudcompliance/aws"
-  version = "1.0.0"
+When drift is detected, CloudCompliance automatically:
 
-  project_name = "my-startup"
-  environment  = "prod"
-  aws_region   = "us-east-1"
-}
+- **LOW RISK** — patches resources instantly (tags, labels)
+- **HIGH RISK** — opens a GitHub PR with the exact fix for human review
+- **CRITICAL** — alerts immediately with remediation steps
+
+```bash
+$ cloudcompliance drift
+🟡 HIGH  cloudcompliance-encrypted-data  DELETED
+
+$ cloudcompliance remediate
+📋 PR opened: https://github.com/KADHIRAVANEG/cloudcompliance/pull/32
+Remediation log saved → compliance/remediation_log.json
+```
+
+---
+
+## AI Compliance Assistant
+
+Powered by NVIDIA NIM. Reads your actual tfstate and compliance reports.
+
+```bash
+$ cloudcompliance ask "am I ready for a SOC2 audit?"
+
+> Your compliance score is 100% (10/10 controls passing).
+> One drift finding detected: encrypted S3 bucket deleted.
+> Recommend: run 'cloudcompliance remediate' to open a fix PR.
 ```
 
 ```bash
-terraform init
-terraform apply
+# Setup
+export NVIDIA_API_KEY="your-key"
+cloudcompliance ask "what controls am I missing?"
 ```
-## Install the CLI
+
+---
+
+## Compliance Score History
+
+SOC2 Type II requires evidence over time. Every report run is saved automatically.
 
 ```bash
-pip install cloudcompliance
-cloudcompliance report
+$ cloudcompliance history
 
-# Detect infrastructure drift
-cloudcompliance drift
+Date              Score   Controls   Trend
+2026-07-01        70%     7/10       —
+2026-07-07        90%     9/10       ↑ +20%
+2026-07-12        100%    10/10      ↑ +10%
 
-# Detect drift against real AWS
-cloudcompliance drift --endpoint ""
+$ cloudcompliance history --export
+# Exports history_export.json for auditors
 ```
 
-## Docker Usage
+---
 
-```bash
-# Pull the image
-docker pull ghcr.io/kadhiravaneg/terraform-aws-cloudcompliance:latest
+## CI/CD Compliance Gate
 
-# Run against your terraform state
-docker run -v /path/to/your/terraform:/app/terraform \
-  ghcr.io/kadhiravaneg/terraform-aws-cloudcompliance:latest
-
-# Run against this repo's state
-docker run -v ~/cloudcompliance/terraform:/app/terraform \
-  ghcr.io/kadhiravaneg/terraform-aws-cloudcompliance:latest
-```
-
-
-**Expected output:**
-
-```
-╭────────────────────────────────────────╮
-│ CloudCompliance — SOC2 Evidence Report │
-│ Total resources provisioned: 29        │
-╰────────────────────────────────────────╯
-SOC2 Compliance Score: 100% (7/7 controls passing)
-```
+Every pull request automatically:
+1. **Terraform Validate** — format + syntax check
+2. **Checkov Security Scan** — 500+ security rules
+3. **SOC2 Compliance Check** — deploys to LocalStack, runs report, blocks if score < 100%
 
 ---
 
 ## Project Structure
 
+
 ```
 cloudcompliance/
 ├── terraform/
-│   ├── main.tf                  # Root — calls all modules
-│   ├── variables.tf             # Environment, region, endpoint
-│   ├── backend.tf               # Local (dev) / S3 (prod) backend
-│   ├── local.tfvars             # LocalStack config
-│   ├── prod.tfvars              # Real AWS config
+│   ├── main.tf
 │   └── modules/
-│       ├── networking/          # CC6.1 — VPC, subnets, SGs
-│       ├── logging/             # CC7.2 — Audit bucket
-│       ├── encryption/          # CC6.7 — KMS, encrypted S3
-│       ├── iam/                 # CC6.2 — Password policy, roles
-│       ├── monitoring/          # CC7.1 — CloudWatch alarms
-│       └── config/              # CC7.1/7.2 — Config rules
-├── compliance/
-│   └── report.py                # SOC2 evidence generator
-├── .github/workflows/
-│   └── compliance.yml           # CI gate — blocks non-compliant PRs
-└── Makefile                     # make deploy / report / destroy
+│       ├── networking/     # CC6.1
+│       ├── logging/        # CC7.2
+│       ├── encryption/     # CC6.7
+│       ├── iam/            # CC6.2
+│       ├── monitoring/     # CC7.1
+│       ├── config/         # CC7.1 + CC7.2
+│       ├── incident_response/ # CC7.3
+│       ├── access_analyzer/   # CC6.3
+│       └── availability/   # A1.1
+├── cloudcompliance/
+│   ├── report.py           # SOC2 evidence generator
+│   ├── history.py          # Score timeline (SQLite)
+│   ├── assistant.py        # AI compliance assistant
+│   ├── drift/
+│   │   └── detector.py     # Drift detection engine
+│   └── remediation.py      # Auto-remediation engine
+├── compliance/             # Generated reports
+├── docs/                   # Project website
+├── .github/workflows/      # CI/CD gate
+├── .env.example            # Environment variables template
+└── Makefile
 ```
 
 ## Chart 
@@ -217,102 +259,113 @@ flowchart TD
     classDef infra fill:#2980b9,stroke:#fff,color:#fff;
     classDef module fill:#34495e,stroke:#fff,color:#fff;
     classDef glue fill:#f39c12,stroke:#000,color:#000;
-    classDef comp fill:#27ae60,stroke:#fff,color:#fff;
+    classDef core fill:#27ae60,stroke:#fff,color:#fff;
 
     %% Orchestration Layer
     MK[Makefile]:::glue
-    CI[.github/workflows/compliance.yml]:::glue
+    CI[.github/workflows/]:::glue
 
     %% Terraform Root
     TF_Root[terraform/]:::infra
     TF_Root --> Main[main.tf]
-    TF_Root --> Vars[vars/backend.tf]
-    TF_Root --> TFVars[*.tfvars]
-
-    %% Module Layer
     TF_Root --> Mod[modules/]:::module
+
+    %% Module Layer & SOC2 Mapping
     Mod --> N[networking - CC6.1]:::module
     Mod --> L[logging - CC7.2]:::module
     Mod --> E[encryption - CC6.7]:::module
     Mod --> I[iam - CC6.2]:::module
     Mod --> M[monitoring - CC7.1]:::module
     Mod --> C[config - CC7.1/7.2]:::module
+    Mod --> IR[incident_response - CC7.3]:::module
+    Mod --> AA[access_analyzer - CC6.3]:::module
+    Mod --> AV[availability - A1.1]:::module
 
-    %% Compliance Evidence Layer
-    Comp[compliance/report.py]:::comp
+    %% Core Logic Layer
+    Core[cloudcompliance/]:::core
+    Core --> Rep[report.py]
+    Core --> Hist[history.py]
+    Core --> Asst[assistant.py]
+    Core --> Drift[drift/detector.py]
+    Core --> Rem[remediation.py]
 
     %% Connections
     MK -->|deploy| TF_Root
-    MK -->|report| Comp
+    MK -->|audit| Core
     CI -->|gate| TF_Root
-    CI -->|audit| Comp
+    CI -->|check| Core
+    Drift -.-> Rem
+    Core -->|outputs| Comp[compliance/]```
+
+
+---
+
+## Use as a Terraform Module
+
+```hcl
+module "soc2_baseline" {
+  source  = "KADHIRAVANEG/cloudcompliance/aws"
+  version = "1.4.0"
+
+  project_name = "my-startup"
+  environment  = "prod"
+  aws_region   = "us-east-1"
+}
 ```
 
 ---
 
-## CI/CD Pipeline
-
-Every pull request automatically runs:
-
-1. **Terraform Validate** — format + syntax check
-2. **Checkov Security Scan** — static analysis against 500+ security rules
-3. **SOC2 Compliance Check** — deploys to LocalStack, runs report, blocks if score < 100%
-
----
-
-## Deploying to Real AWS
+## Install Options
 
 ```bash
-# 1. Configure AWS credentials
-aws configure
+# Python CLI
+pip install cloudcompliance
 
-# 2. Deploy to real AWS
-make deploy-prod
+# Docker
+docker pull ghcr.io/kadhiravaneg/cloudcompliance:latest
+docker run -v ~/cloudcompliance/terraform:/app/terraform \
+  ghcr.io/kadhiravaneg/cloudcompliance:latest
+
+# Terraform Registry
+source = "KADHIRAVANEG/cloudcompliance/aws"
+version = "1.4.0"
 ```
-
-For production, uncomment the S3 backend in `terraform/backend.tf`
-to enable remote state with DynamoDB locking.
 
 ---
 
 ## LocalStack vs Real AWS
 
-| Feature              | LocalStack (free) | Real AWS |
-|----------------------|-------------------|----------|
-| VPC / Subnets        | ✅                | ✅       |
-| S3 + Encryption      | ✅                | ✅       |
-| KMS                  | ✅                | ✅       |
-| IAM                  | ✅                | ✅       |
-| CloudWatch           | ✅                | ✅       |
-| AWS Config           | ✅                | ✅       |
-| SNS                  | ✅                | ✅       |
-| CloudTrail           | ⚠️ Pro only       | ✅       |
-| GuardDuty            | ⚠️ Pro only       | ✅       |
+| Feature | LocalStack (free) | Real AWS |
+|---------|-------------------|----------|
+| VPC / Subnets | ✅ | ✅ |
+| S3 + Encryption | ✅ | ✅ |
+| KMS | ✅ | ✅ |
+| IAM | ✅ | ✅ |
+| CloudWatch | ✅ | ✅ |
+| AWS Config | ✅ | ✅ |
+| SNS | ✅ | ✅ |
+| CloudTrail | ⚠️ Pro only | ✅ |
+| GuardDuty | ⚠️ Pro only | ✅ |
 
 ---
 
-> **Honest scope:** This IaC implements the *technical infrastructure controls*
-> for SOC2 Common Criteria CC6–CC8 and Availability A1. Full SOC2 Type II
-> certification additionally requires organizational policies, vendor management,
-> employee training, and 6–12 months of evidence collection — which are outside
-> the scope of any IaC tool.
-
 ## Standards Referenced
 
-- [AICPA SOC2 Trust Services Criteria 2017](https://www.aicpa.org/resources/landing/system-and-organization-controls-soc-suite-of-services)
-- [CIS AWS Foundations Benchmark v2.0](https://www.cisecurity.org/benchmark/amazon_web_services)
-- [NIST SP 800-53 Rev 5](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf)
-- [AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/welcome.html)
+- [AICPA SOC2 Trust Services Criteria 2017](https://www.aicpa.org)
+- [CIS AWS Foundations Benchmark v2.0](https://www.cisecurity.org)
+- [NIST SP 800-53 Rev 5](https://nvlpubs.nist.gov)
+- [AWS Security Reference Architecture](https://docs.aws.amazon.com/prescriptive-guidance)
 
 ---
 
 ## Tech Stack
 
-`Terraform` · `Python` · `AWS` · `LocalStack` · `GitHub Actions` · `KMS` · `IAM` · `CloudWatch` · `SNS` · `AWS Config`
+`Terraform` · `Python` · `AWS` · `LocalStack` · `GitHub Actions` · `NVIDIA NIM` · `SQLite` · `KMS` · `IAM` · `CloudWatch` · `SNS` · `AWS Config`
 
 ---
 
 ## Author
 
-**Kadhiravan E.G.** — 3rd year Cybersecurity student  
-GitHub: [@KADHIRAVANEG](https://github.com/KADHIRAVANEG)
+**Kadhiravan E.G.** — Cybersecurity student  
+GitHub: [@KADHIRAVANEG](https://github.com/KADHIRAVANEG)  
+Website: [kadhiravaneg.github.io/cloudcompliance](https://kadhiravaneg.github.io/cloudcompliance)
