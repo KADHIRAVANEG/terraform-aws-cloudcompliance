@@ -78,14 +78,16 @@ jobs:
             -p 4510-4559:4510-4559 \
             localstack/localstack:3.4.0
           echo "Waiting for LocalStack to be ready..."
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             if curl -s http://localhost:4566/_localstack/health | grep -q '"s3"'; then
               echo "LocalStack is ready"
+              sleep 5
               break
             fi
-            echo "Attempt $i/30..."
+            echo "Attempt $i/60..."
             sleep 3
           done
+
 
       - name: Configure AWS CLI for LocalStack
         run: |
@@ -103,7 +105,9 @@ jobs:
         run: |
           cd terraform
           terraform init
-          terraform apply -var-file="$(pwd)/local.tfvars" -auto-approve
+          terraform apply -var-file="$(pwd)/local.tfvars" -auto-approve || \
+          (echo "First apply failed, retrying..." && \
+          terraform apply -var-file="$(pwd)/local.tfvars" -auto-approve)
 
       - name: Run Compliance Report
         run: python compliance/report.py
