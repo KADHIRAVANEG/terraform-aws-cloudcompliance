@@ -268,6 +268,19 @@ def main():
         default=None,
         help="AWS endpoint URL"
     )
+    
+    serve_parser = subparsers.add_parser("serve", help="Start live compliance dashboard")
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to run dashboard on (default: 8080)"
+    )
+    serve_parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host to bind to (default: 127.0.0.1)"
+    )    
 
     args = parser.parse_args()
 
@@ -299,6 +312,10 @@ def main():
             dry_run=args.dry_run
         )
         engine.run()
+
+    elif args.command == "serve":
+        from cloudcompliance.dashboard import serve
+        serve(host=args.host, port=args.port)
 
     else:
         console.print(f"[dim]Reading state from: {tfstate_path}[/dim]")
