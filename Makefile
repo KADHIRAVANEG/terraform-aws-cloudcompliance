@@ -1,5 +1,8 @@
 .PHONY: deploy deploy-prod validate report drift history remediate destroy all
 
+start:
+	bash scripts/start.sh
+
 deploy:
 	cd terraform && terraform init && terraform apply -var-file=local.tfvars -auto-approve
 
@@ -31,3 +34,6 @@ destroy:
 	cd terraform && terraform destroy -var-file=local.tfvars -auto-approve
 
 all: deploy report drift history
+
+serve:
+	cloudcompliance serve
