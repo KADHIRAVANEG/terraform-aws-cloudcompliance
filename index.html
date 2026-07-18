@@ -115,7 +115,7 @@ footer a{color:var(--green)}
 </nav>
 
 <section class="hero">
-  <div class="badge">⚡ v1.4.0 — AI assistant + auto-remediation</div>
+  <div class="badge">⚡ v1.6.0 — Slack notifications + scheduled drift detection</div>
   <h1>Provision a <span>compliant AWS</span><br>environment in one command</h1>
   <p class="hero-sub">Infrastructure as Code that deploys 46 AWS resources across 10 SOC2 controls — with drift detection, AI assistant, score history and auto-remediation.</p>
   <div class="cta-group">
@@ -211,6 +211,18 @@ footer a{color:var(--green)}
       <div class="feature-title">CI/CD Compliance Gate</div>
       <div class="feature-desc">GitHub Actions blocks every non-compliant PR. Runs Terraform validate, Checkov security scan, and full SOC2 compliance check automatically.</div>
       <span class="feature-tag tag-new">Always on</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💬</div>
+      <div class="feature-title">Slack notifications</div>
+      <div class="feature-desc">Drift alerts, compliance scores and PR notifications sent to your Slack channel automatically. Free webhook, no paid plan needed.</div>
+      <span class="feature-tag" style="background:rgba(74,222,128,0.15);color:#4ade80">v1.6.0 NEW</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⏰</div>
+      <div class="feature-title">cloudcompliance schedule</div>
+      <div class="feature-desc">Runs drift detection automatically every hour. Sends Slack alert when drift is found. Runs until Ctrl+C.</div>
+      <span class="feature-tag" style="background:rgba(74,222,128,0.15);color:#4ade80">v1.6.0 NEW</span>
     </div>
   </div>
 </section>

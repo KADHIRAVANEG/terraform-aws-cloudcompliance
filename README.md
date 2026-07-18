@@ -57,9 +57,9 @@ cloudcompliance serve   # → http://localhost:8080
 
 ---
 
+```bash
 ## CLI Commands
 
-```bash
 # Deploy SOC2 baseline infrastructure
 make deploy
 
@@ -71,11 +71,11 @@ cloudcompliance drift
 
 # Auto-remediate drift findings
 cloudcompliance remediate
-cloudcompliance remediate --dry-run    # preview without changes
+cloudcompliance remediate --dry-run
 
 # View compliance score history (SOC2 Type II evidence)
 cloudcompliance history
-cloudcompliance history --export       # export JSON for auditors
+cloudcompliance history --export
 
 # Ask AI about your compliance state
 cloudcompliance ask "am I ready for a SOC2 audit?"
@@ -84,8 +84,12 @@ cloudcompliance ask "explain CC7.2 and how I implement it"
 cloudcompliance ask "what controls am I missing?"
 
 # Open live compliance dashboard
-cloudcompliance serve                  # → http://localhost:8080
-cloudcompliance serve --port 9090      # custom port
+cloudcompliance serve
+cloudcompliance serve --port 9090
+
+# Scheduled drift detection (runs every hour)
+cloudcompliance schedule
+cloudcompliance schedule --interval 30
 ```
 
 ---
@@ -194,6 +198,37 @@ Remediation log saved → compliance/remediation_log.json
 ```
 
 ---
+
+## Slack Notifications
+
+Add your Slack webhook to `.env` and get automatic alerts:
+
+```bash
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/here
+```
+
+CloudCompliance sends Slack messages for:
+- ✅ Compliance report generated with score
+- ⚠️ Drift detected — with resource details
+- 🔧 Remediation PR opened — with PR link
+- ✅ No drift confirmed
+
+## Scheduled Drift Detection
+
+Run drift detection automatically every hour:
+
+```bash
+# Run every 60 minutes (default)
+cloudcompliance schedule
+
+# Run every 30 minutes
+cloudcompliance schedule --interval 30
+
+# Against real AWS
+cloudcompliance schedule --endpoint "" --interval 60
+```
+
+>Sends Slack alert automatically when drift is found.
 
 ## AI Compliance Assistant
 
@@ -442,13 +477,13 @@ version = "1.5.0"
 
 | Version | What's new |
 |---------|-----------|
+| v1.6.0 | Slack notifications + scheduled drift detection |
 | v1.5.0 | Live dashboard — `cloudcompliance serve` |
 | v1.4.0 | Auto-remediation — GitHub PR for high-risk drift |
 | v1.3.0 | Compliance score history — SOC2 Type II evidence |
 | v1.2.0 | Drift detection — `cloudcompliance drift` |
 | v1.1.0 | 10 SOC2 controls, 46 resources, markdown reports |
 | v1.0.0 | Initial release — SOC2 baseline IaC |
-
 ---
 
 ## Author
