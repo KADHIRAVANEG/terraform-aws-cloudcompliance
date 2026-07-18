@@ -234,6 +234,8 @@ After merging, run `make deploy` to restore the expected state.
                     "severity": finding["severity"]
                 })
                 console.print(f"[cyan]📋 PR opened: {pr_url_str}[/cyan]")
+                from cloudcompliance.notifications import notify_remediation
+                notify_remediation(resource_id, pr_url_str, finding["severity"])
             else:
                 console.print(f"[yellow]Warning: PR creation failed for {resource_id}[/yellow]")
 

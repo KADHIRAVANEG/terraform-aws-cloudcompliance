@@ -30,6 +30,9 @@ remediate:
 remediate-dry:
 	cloudcompliance remediate --dry-run
 
+schedule:
+	cloudcompliance schedule --interval 60
+
 destroy:
 	cd terraform && terraform destroy -var-file=local.tfvars -auto-approve
 

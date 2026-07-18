@@ -195,9 +195,40 @@ class DriftDetector:
                     "remediation": "Run 'terraform apply' to restore encryption key"
                 })
 
+
+
+
     def send_alert(self, drift_count: int):
         if drift_count == 0:
+            from cloudcompliance.notifications import notify_no_drift
+            notify_no_drift()
             return
+
+        sns = self._client("sns")
+        try:
+            topics = sns.list_topics().get("Topics", [])
+            alert_topic = next(
+                (t["TopicArn"] for t in topics
+                 if "root-account-alert" in t["TopicArn"]),
+                None
+            )
+            if alert_topic:
+                sns.publish(
+                    TopicArn=alert_topic,
+                    Subject=f"CloudCompliance: {drift_count} drift findings detected",
+                    Message=json.dumps({
+                        "alert_type": "DRIFT_DETECTED",
+                        "drift_count": drift_count,
+                        "timestamp": datetime.now().isoformat(),
+                        "findings": self.drift_findings
+                    }, indent=2)
+                )
+                console.print(f"[green]Alert sent to SNS topic[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not send SNS alert: {e}[/yellow]")
+
+        from cloudcompliance.notifications import notify_drift
+        notify_drift(self.drift_findings, drift_count)
         sns = self._client("sns")
         try:
             topics = sns.list_topics().get("Topics", [])

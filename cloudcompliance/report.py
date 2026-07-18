@@ -208,7 +208,9 @@ def print_report(results: dict, resources: list, output_path: Path = None):
 
     from cloudcompliance.history import save_score
     save_score(output_path)
-
+    # Slack notification
+    from cloudcompliance.notifications import notify_compliance_score
+    notify_compliance_score(score, pass_count, len(results), len(resources))
 
 def run(tfstate_path: str = None, output_path: str = None):
     if tfstate_path is None:
@@ -268,6 +270,18 @@ def main():
         default=None,
         help="AWS endpoint URL"
     )
+    schedule_parser = subparsers.add_parser("schedule", help="Run drift detection on a schedule")
+    schedule_parser.add_argument(
+        "--interval",
+        type=int,
+        default=60,
+        help="Check interval in minutes (default: 60)"
+    )
+    schedule_parser.add_argument(
+        "--endpoint",
+        default=None,
+        help="AWS endpoint URL"
+    )
     
     serve_parser = subparsers.add_parser("serve", help="Start live compliance dashboard")
     serve_parser.add_argument(
@@ -316,6 +330,13 @@ def main():
     elif args.command == "serve":
         from cloudcompliance.dashboard import serve
         serve(host=args.host, port=args.port)
+    
+    elif args.command == "schedule":
+        from cloudcompliance.scheduler import schedule
+        schedule(
+            interval_minutes=args.interval,
+            endpoint_url=args.endpoint
+        )    
 
     else:
         console.print(f"[dim]Reading state from: {tfstate_path}[/dim]")
