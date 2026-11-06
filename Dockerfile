@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 LABEL maintainer="Kadhiravan E.G."
 LABEL description="CloudCompliance — SOC2 Evidence Report Generator"
-LABEL org.opencontainers.image.source=https://github.com/JOKER-53/terraform-aws-cloudcompliance
+LABEL org.opencontainers.image.source=https://github.com/KADHIRAVANEG/cloudcompliance
 
 WORKDIR /app
 

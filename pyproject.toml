@@ -9,7 +9,7 @@ description = "SOC2 compliance evidence generator for Terraform AWS infrastructu
 readme = "README.md"
 license = "MIT"
 authors = [
-  {name = "Kadhiravan E.G.", email = "kadhiravan226@gmail.com"}
+  {name = "Kadhiravan E.G.", email = "kadhiravanegk@gmail.com"}
 ]
 keywords = ["soc2", "compliance", "terraform", "aws", "security", "iac"]
 classifiers = [
@@ -33,8 +33,8 @@ dependencies = [
 cloudcompliance = "cloudcompliance.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/JOKER-53/terraform-aws-cloudcompliance"
-Repository = "https://github.com/JOKER-53/terraform-aws-cloudcompliance"
+Homepage = "https://github.com/KADHIRAVANEG/cloudcompliance"
+Repository = "https://github.com/KADHIRAVANEG/cloudcompliance"
 
 [tool.setuptools.packages.find]
 include = ["cloudcompliance*"]

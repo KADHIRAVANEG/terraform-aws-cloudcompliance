@@ -209,7 +209,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:0 1.5r
   <div class="nav-right">
     <div class="live"><div class="dot"></div><span id="lastUpdated">Loading...</span></div>
     <button class="btn" onclick="fetchStatus()"><i class="ti ti-refresh"></i> Refresh</button>
-    <button class="btn btn-green" onclick="window.open('https://github.com/JOKER-53/terraform-aws-cloudcompliance','_blank')"><i class="ti ti-brand-github"></i> GitHub</button>
+    <button class="btn btn-green" onclick="window.open('https://github.com/KADHIRAVANEG/cloudcompliance','_blank')"><i class="ti ti-brand-github"></i> GitHub</button>
   </div>
 </nav>
 <div class="page">

@@ -46,7 +46,7 @@ class RemediationEngine:
         self.endpoint_url = endpoint_url or os.getenv("AWS_ENDPOINT_URL") or os.getenv("LOCALSTACK_ENDPOINT")
         self.dry_run = dry_run
         self.github_token = os.getenv("GITHUB_TOKEN")
-        self.github_repo = os.getenv("GITHUB_REPO", "JOKER-53/terraform-aws-cloudcompliance")
+        self.github_repo = os.getenv("GITHUB_REPO", "KADHIRAVANEG/cloudcompliance")
         self.compliance_dir = Path(compliance_dir) if compliance_dir else get_default_compliance_dir()
         self.actions_taken = []
         self.prs_opened = []

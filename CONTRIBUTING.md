@@ -24,7 +24,7 @@ Thank you for considering contributing to our project! ❤️
 
 ```bash
 # Clone the repo
-git clone https://github.com/JOKER-53/terraform-aws-cloudcompliance.git
+git clone https://github.com/KADHIRAVANEG/cloudcompliance.git
 cd your-repo
 
 # Install dependencies
