@@ -8,10 +8,10 @@
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-# CloudCompliance — SOC2-Ready AWS IaC
+# CloudCompliance - SOC2-Ready AWS IaC
 
 > Infrastructure as Code that provisions a SOC2-aligned AWS security baseline
-> with 10 controls and 46 resources — deployable in one command.
+> with 10 controls and 46 resources - deployable in one command.
 > Includes drift detection, AI compliance assistant, score history, auto-remediation and a live dashboard.
 
 ## The Problem
