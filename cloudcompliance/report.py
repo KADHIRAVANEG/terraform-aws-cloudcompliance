@@ -256,3 +256,13 @@ def run(tfstate_path: str = None, output_path: str = None, framework: str = "soc
     controls = load_controls(framework)
     results = evaluate_controls(resources, controls, provider=provider)
     print_report(results, resources, output_path=Path(output_path) if output_path else None, framework=framework, output_dir=output_dir)
+
+
+def main():
+    """Backward compatibility entry point for cloudcompliance <= 1.6.0."""
+    from cloudcompliance.cli import main as cli_main
+    return cli_main()
+
+
+if __name__ == "__main__":
+    main()
