@@ -170,6 +170,12 @@ def save_markdown(results: dict, resources: list, score: int, pass_count: int, f
         f.write("- NIST SP 800-53 Rev 5\n")
     console.print(f"[dim]Markdown report → {md_path}[/dim]")
 
+    if framework == "soc2":
+        legacy_md = out_dir / "compliance_report.md"
+        with open(legacy_md, "w") as f:
+            with open(md_path) as src:
+                f.write(src.read())
+
 
 def print_report(results: dict, resources: list, output_path: Path = None, framework: str = "soc2", output_dir: Path = None, pdf: bool = False, tfstate_path: str = None):
     console.print()
@@ -238,6 +244,11 @@ def print_report(results: dict, resources: list, output_path: Path = None, frame
         json.dump(output, f, indent=2)
     console.print()
     console.print(f"[dim]Evidence saved → {target_output_path}[/dim]")
+
+    if framework == "soc2" and output_path is None:
+        legacy_path = out_dir / "compliance_report.json"
+        with open(legacy_path, "w") as f:
+            json.dump(output, f, indent=2)
 
     save_markdown(results, resources, score, pass_count, framework, output_dir=out_dir)
 

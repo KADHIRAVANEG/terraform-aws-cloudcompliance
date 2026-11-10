@@ -109,7 +109,7 @@ jobs:
           terraform apply -var-file="$(pwd)/local.tfvars" -auto-approve)
 
       - name: Run Compliance Report
-        run: cloudcompliance report
+        run: cloudcompliance report --pdf
       
       - name: Run Drift Detection
         run: cloudcompliance drift --endpoint http://localhost:4566
@@ -118,8 +118,9 @@ jobs:
       - name: Check Compliance Score
         run: |
           python - <<'EOF'
-          import json, sys
-          with open('compliance/compliance_report.json') as f:
+          import json, os, sys
+          report_path = 'compliance/soc2_compliance_report.json' if os.path.exists('compliance/soc2_compliance_report.json') else 'compliance/compliance_report.json'
+          with open(report_path) as f:
               report = json.load(f)
           score = report['compliance_score']
           print(f"SOC2 Compliance Score: {score}%")
@@ -138,4 +139,7 @@ jobs:
         if: always()
         with:
           name: compliance-report
-          path: compliance/compliance_report.json
+          path: |
+            compliance/*.json
+            compliance/*.md
+            compliance/*.pdf
