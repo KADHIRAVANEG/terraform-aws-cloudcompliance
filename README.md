@@ -55,23 +55,25 @@ cloudcompliance drift
 cloudcompliance serve   # → http://localhost:8080
 ```
 
-## What's New in v2.0 & v2.1 (Advanced Features)
+## What's New in v2.2 (Enterprise Expansion)
 
+- **🛡 GitHub Code Scanning & SARIF Export (`--sarif` / `--format sarif`):** Generates OASIS SARIF v2.1.0 output for compliance violations and drift findings for native integration into GitHub's Security > Code Scanning Alerts dashboard (`github/codeql-action/upload-sarif`).
+- **⚡ Interactive Starter Wizard (`cloudcompliance init`):** Interactive terminal wizard that scaffolds compliant `main.tf`, `variables.tf`, `terraform.tfvars`, and `.env.example` pre-configured for your provider, framework, and environment.
+- **🌐 Multi-Region CSPM Scanning (`scan --live --all-regions` / `--regions`):** Inspects all active AWS regions concurrently via AWS APIs, uncovering unencrypted resources or unmonitored subnets in secondary regions.
+- **🔔 Multi-Channel Alerting (Teams, Discord, Slack, Generic Webhooks):** Dispatches real-time compliance score regressions and drift events across Slack, Microsoft Teams, Discord embeds, and PagerDuty/Datadog-compatible generic webhooks.
 - **Signed Executive Auditor PDF Reports (`--pdf`):** Generates formal, audit-ready PDF reports with SOC2/HIPAA/PCI-DSS score badges, SHA-256 cryptographic evidence fingerprints, and auditor sign-off blocks.
 - **GitHub PR Compliance Bot & Action:** Turn compliance into an automated PR guard. Compares base vs. PR compliance scores, blocks regressions, and posts interactive visual Markdown comments directly to PRs.
 - **Live Agentless AWS Scanner (CSPM `scan --live`):** Connects directly to AWS APIs via `boto3` to audit real-world infrastructure posture without requiring a `terraform.tfstate` file.
-- **Interactive Web Dashboard (`cloudcompliance serve`):** Trigger on-demand drift scans directly in the browser, download complete auditor `.zip` bundles with SHA-256 manifests, and switch frameworks (SOC2, HIPAA, PCI-DSS) in real time.
-- **Multi-Framework Support:** In addition to SOC2, inherently supports HIPAA and PCI-DSS using a decoupled JSON rule engine (`controls.json`).
-- **Multi-Cloud Readiness:** Maps standard controls directly to AWS, Azure (`azurerm`), and GCP (`google`) Terraform resources natively.
-- **Custom OPA/Rego Policies:** Write your own business-specific rules in Rego and run them alongside standard controls (`--rego`).
-- **Remote State Support:** Natively pull `terraform.tfstate` dynamically from AWS S3 (`--tfstate s3://...`).
-- **Automated TF Generation:** Remediation engine now auto-generates declarative **Terraform 1.5 import blocks** for unmanaged drift and opens GitHub PRs.
-- **Event-Driven Serverless Scanning:** Deploy the scanner as an AWS Lambda via EventBridge rules to instantly evaluate compliance the millisecond CloudTrail detects out-of-band mutations.
+- **Interactive Web Dashboard (`cloudcompliance serve`):** Trigger on-demand drift scans directly in the browser, download complete auditor `.zip` bundles with SHA-256 manifests, and switch frameworks in real time.
 
 ---
 
 ```bash
 ## CLI Commands
+
+# Interactive Starter Wizard (Bootstraps tailored, compliant IaC)
+cloudcompliance init
+cloudcompliance init --provider aws --framework soc2 --env prod --non-interactive
 
 # Deploy baseline infrastructure
 make deploy
@@ -84,9 +86,17 @@ cloudcompliance report --framework pcidss
 # Generate signed Executive Auditor PDF report
 cloudcompliance report --pdf
 
+# Generate OASIS SARIF v2.1.0 for GitHub Code Scanning
+cloudcompliance report --sarif
+cloudcompliance report --format sarif
+
 # Live Agentless AWS Scanner (CSPM mode — no tfstate required)
 cloudcompliance scan --live
 cloudcompliance scan --live --framework hipaa --pdf
+
+# Multi-Region CSPM Scanning across all active regions
+cloudcompliance scan --live --all-regions --sarif
+cloudcompliance scan --live --regions us-east-1,eu-west-1,ap-southeast-1
 
 # GitHub PR Compliance Guard & Commenter
 cloudcompliance pr-check --min-score 80 --fail-on-regression
@@ -140,6 +150,36 @@ jobs:
           fail-on-regression: 'true'
           post-comment: 'true'
           github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### GitHub Code Scanning & SARIF Integration
+
+Export OASIS SARIF v2.1.0 compliance and drift results directly into GitHub's native Security Code Scanning dashboard:
+
+```yaml
+name: "Compliance Security Scan"
+on: [push, pull_request]
+
+jobs:
+  sarif-compliance:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CloudCompliance
+        run: pip install cloudcompliance
+      - name: Generate SARIF Compliance Report
+        run: cloudcompliance report --framework soc2 --sarif
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: compliance/soc2_compliance_report.sarif
 ```
 
 ---
@@ -254,19 +294,29 @@ Remediation log saved → compliance/remediation_log.json
 
 ---
 
-## Slack Notifications
+## Multi-Channel Alerting & Webhooks
 
-Add your Slack webhook to `.env` and get automatic alerts:
+Configure any or all webhook endpoints in `.env` to receive real-time notifications:
 
 ```bash
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/here
+# Slack incoming webhook
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/slack/webhook
+
+# Microsoft Teams connector webhook (MessageCard)
+TEAMS_WEBHOOK_URL=https://company.webhook.office.com/webhookb2/your/teams/webhook
+
+# Discord channel webhook (Rich Embeds)
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your/discord/webhook
+
+# Generic / PagerDuty / Datadog webhook
+GENERIC_WEBHOOK_URL=https://events.pagerduty.com/v2/enqueue
 ```
 
-CloudCompliance sends Slack messages for:
-- ✅ Compliance report generated with score
-- ⚠️ Drift detected — with resource details
-- 🔧 Remediation PR opened — with PR link
-- ✅ No drift confirmed
+CloudCompliance broadcasts alerts simultaneously across all configured channels for:
+- ✅ Compliance report generated with score, control counts, and status
+- ⚠️ Drift detected — with resource details, drift type, and severity
+- 🔧 Remediation PR opened — with direct GitHub PR review link
+- ✅ Infrastructure in sync confirmation
 
 ## Scheduled Drift Detection
 

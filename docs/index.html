@@ -116,9 +116,9 @@ footer a{color:var(--green)}
 </nav>
 
 <section class="hero">
-  <div class="badge">⚡ v2.1.0 — Executive Auditor PDF, GitHub PR Bot, CSPM Live Scanning & Interactive Dashboard</div>
+  <div class="badge">⚡ v2.2.0 — SARIF Export, Interactive Wizard, Multi-Region CSPM & Multi-Channel Alerts</div>
   <h1>Provision a <span>compliant AWS</span><br>environment in one command</h1>
-  <p class="hero-sub">Infrastructure as Code that deploys 46 AWS resources across 10 SOC2 controls — with drift detection, AI assistant, score history, auto-remediation, signed auditor PDFs, CSPM scanner, and live dashboard.</p>
+  <p class="hero-sub">Infrastructure as Code that deploys 46 AWS resources across 10 SOC2 controls — with drift detection, AI assistant, score history, auto-remediation, signed auditor PDFs, multi-region CSPM scanner, SARIF code scanning, and live dashboard.</p>
   <div class="cta-group">
     <a href="https://github.com/KADHIRAVANEG/cloudcompliance" class="btn btn-primary">View on GitHub</a>
     <a href="https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws" class="btn btn-outline">Terraform Registry</a>
@@ -238,7 +238,31 @@ footer a{color:var(--green)}
       <div class="feature-icon">📊</div>
       <div class="feature-title">cloudcompliance serve</div>
       <div class="feature-desc">Starts real-time web dashboard on port 8080 showing live compliance score ring, drift alerts, and historical timeline.</div>
-      <span class="feature-tag tag-new">v2.0.0 NEW</span>
+      <span class="feature-tag tag-new">v2.0.0</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">cloudcompliance init</div>
+      <div class="feature-desc">Interactive terminal starter wizard. Scaffolds tailored, compliant Terraform IaC, variables, and .env files for your stack in seconds.</div>
+      <span class="feature-tag tag-new">v2.2.0 NEW</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <div class="feature-title">SARIF Code Scanning</div>
+      <div class="feature-desc">Export OASIS SARIF v2.1.0 compliance and drift results directly into GitHub's native Security Code Scanning dashboard.</div>
+      <span class="feature-tag tag-new">v2.2.0 NEW</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-title">Multi-Region CSPM</div>
+      <div class="feature-desc">Audit all active AWS regions concurrently using live APIs. Catch unencrypted VPCs or open security groups in forgotten regions.</div>
+      <span class="feature-tag tag-new">v2.2.0 NEW</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔔</div>
+      <div class="feature-title">Multi-Channel Alerts</div>
+      <div class="feature-desc">Broadcast real-time compliance regressions and drift findings to Slack, Microsoft Teams, Discord, and PagerDuty webhooks.</div>
+      <span class="feature-tag tag-new">v2.2.0 NEW</span>
     </div>
   </div>
 </section>

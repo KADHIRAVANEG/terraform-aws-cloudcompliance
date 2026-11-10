@@ -61,6 +61,37 @@ class TestLiveAWSScanner(unittest.TestCase):
         self.assertIn("aws_kms_key", res_types)
         self.assertIn("aws_kms_alias", res_types)
 
+    @patch("boto3.Session")
+    def test_scanner_multi_region(self, mock_session_cls):
+        mock_session = MagicMock()
+        mock_session_cls.return_value = mock_session
+        mock_client = MagicMock()
+        mock_session.client.return_value = mock_client
+
+        mock_client.describe_regions.return_value = {
+            "Regions": [{"RegionName": "us-east-1"}, {"RegionName": "eu-west-1"}]
+        }
+        mock_client.describe_vpcs.return_value = {"Vpcs": [{"VpcId": "vpc-multi"}]}
+        mock_client.describe_subnets.return_value = {"Subnets": []}
+        mock_client.describe_security_groups.return_value = {"SecurityGroups": []}
+        mock_client.describe_flow_logs.return_value = {"FlowLogs": []}
+
+        # Test explicit regions
+        scanner = LiveAWSScanner(regions=["us-east-1", "eu-west-1"])
+        self.assertEqual(scanner.get_target_regions(), ["us-east-1", "eu-west-1"])
+
+        # Test all_regions flag
+        scanner_all = LiveAWSScanner(all_regions=True)
+        regions = scanner_all.get_target_regions()
+        self.assertEqual(regions, ["us-east-1", "eu-west-1"])
+
+        scanner.scan_vpc()
+        # Scan ran across 2 regions -> 2 VPC resources added
+        vpc_resources = [r for r in scanner.discovered_resources if r["type"] == "aws_vpc"]
+        self.assertEqual(len(vpc_resources), 2)
+        regions_found = {r["region"] for r in vpc_resources}
+        self.assertEqual(regions_found, {"us-east-1", "eu-west-1"})
+
 
 if __name__ == "__main__":
     unittest.main()

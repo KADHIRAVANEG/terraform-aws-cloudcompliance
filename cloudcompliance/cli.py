@@ -43,6 +43,18 @@ def main():
         default=False,
         help="Generate signed executive auditor PDF report"
     )
+    parser.add_argument(
+        "--sarif",
+        action="store_true",
+        default=False,
+        help="Generate OASIS SARIF v2.1.0 report for GitHub Security / Code Scanning"
+    )
+    parser.add_argument(
+        "--format",
+        choices=["json", "markdown", "sarif", "pdf"],
+        default=None,
+        help="Output report format (json, markdown, sarif, pdf)"
+    )
     subparsers = parser.add_subparsers(dest="command")
 
     report_parser = subparsers.add_parser("report", help="Generate compliance evidence report")
@@ -69,6 +81,18 @@ def main():
         default=False,
         help="Generate signed executive auditor PDF report"
     )
+    report_parser.add_argument(
+        "--sarif",
+        action="store_true",
+        default=False,
+        help="Generate OASIS SARIF v2.1.0 report for GitHub Security / Code Scanning"
+    )
+    report_parser.add_argument(
+        "--format",
+        choices=["json", "markdown", "sarif", "pdf"],
+        default=None,
+        help="Output report format (json, markdown, sarif, pdf)"
+    )
 
     scan_parser = subparsers.add_parser("scan", help="Live agentless cloud posture scan (CSPM)")
     scan_parser.add_argument(
@@ -94,10 +118,68 @@ def main():
         help="Target AWS region (e.g. us-east-1)"
     )
     scan_parser.add_argument(
+        "--all-regions",
+        action="store_true",
+        default=False,
+        help="Scan all active AWS regions in the account"
+    )
+    scan_parser.add_argument(
+        "--regions",
+        default=None,
+        help="Comma-separated list of target AWS regions (e.g. us-east-1,us-west-2)"
+    )
+    scan_parser.add_argument(
         "--pdf",
         action="store_true",
         default=False,
         help="Generate signed executive auditor PDF report"
+    )
+    scan_parser.add_argument(
+        "--sarif",
+        action="store_true",
+        default=False,
+        help="Generate OASIS SARIF v2.1.0 report for GitHub Security / Code Scanning"
+    )
+
+    init_parser = subparsers.add_parser("init", help="Interactive starter wizard to bootstrap compliant Terraform IaC")
+    init_parser.add_argument(
+        "--provider",
+        choices=["aws", "azure", "gcp"],
+        default=None,
+        help="Cloud provider (aws, azure, gcp)"
+    )
+    init_parser.add_argument(
+        "--framework",
+        choices=["soc2", "hipaa", "pcidss"],
+        default=None,
+        help="Primary compliance framework (soc2, hipaa, pcidss)"
+    )
+    init_parser.add_argument(
+        "--env",
+        choices=["dev", "staging", "prod"],
+        default=None,
+        help="Deployment environment tier (dev, staging, prod)"
+    )
+    init_parser.add_argument(
+        "--project-name",
+        default=None,
+        help="Project or workload name"
+    )
+    init_parser.add_argument(
+        "--region",
+        default=None,
+        help="Target AWS deployment region"
+    )
+    init_parser.add_argument(
+        "--target-dir",
+        default=None,
+        help="Output directory to scaffold Terraform IaC files into"
+    )
+    init_parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        default=False,
+        help="Run without interactive prompts using defaults or provided flags"
     )
 
     pr_parser = subparsers.add_parser("pr-check", aliases=["pr-comment"], help="GitHub PR compliance guard and commenter")
@@ -241,16 +323,35 @@ def main():
         drift_count = detector.run()
         sys.exit(1 if drift_count > 0 else 0)
 
+    elif args.command == "init":
+        from cloudcompliance.wizard import run_wizard
+        run_wizard(
+            provider=args.provider,
+            framework=args.framework,
+            env=args.env,
+            project_name=args.project_name,
+            region=args.region,
+            output_dir=Path(args.target_dir) if getattr(args, "target_dir", None) else None,
+            non_interactive=getattr(args, "non_interactive", False),
+        )
+        sys.exit(0)
+
     elif args.command == "scan":
         from cloudcompliance.scanner import LiveAWSScanner
+        regions_list = [r.strip() for r in args.regions.split(",")] if getattr(args, "regions", None) else None
         scanner = LiveAWSScanner(
             endpoint_url=args.endpoint,
             region=args.region,
+            all_regions=getattr(args, "all_regions", False),
+            regions=regions_list,
         )
+        is_sarif = getattr(args, "sarif", False) or (getattr(args, "format", None) == "sarif")
+        is_pdf = getattr(args, "pdf", False) or (getattr(args, "format", None) == "pdf")
         scanner.evaluate(
             framework=args.framework,
             output_dir=output_dir,
-            pdf=args.pdf,
+            pdf=is_pdf,
+            sarif=is_sarif,
         )
 
     elif args.command in ("pr-check", "pr-comment"):
@@ -325,12 +426,16 @@ def main():
             elif "violations" in rego_results:
                 console.print("[green]✅ Custom OPA Rego Policy: PASS[/green]\n")
 
+        is_sarif = getattr(args, "sarif", False) or (getattr(args, "format", None) == "sarif")
+        is_pdf = generate_pdf or (getattr(args, "format", None) == "pdf")
+
         print_report(
             results,
             resources,
             framework=framework,
             output_dir=output_dir,
-            pdf=generate_pdf,
+            pdf=is_pdf,
+            sarif=is_sarif,
             tfstate_path=tfstate_path,
         )
 
