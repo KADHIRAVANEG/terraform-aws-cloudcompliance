@@ -171,7 +171,7 @@ def save_markdown(results: dict, resources: list, score: int, pass_count: int, f
     console.print(f"[dim]Markdown report → {md_path}[/dim]")
 
 
-def print_report(results: dict, resources: list, output_path: Path = None, framework: str = "soc2", output_dir: Path = None):
+def print_report(results: dict, resources: list, output_path: Path = None, framework: str = "soc2", output_dir: Path = None, pdf: bool = False, tfstate_path: str = None):
     console.print()
     console.print(Panel.fit(
         f"[bold cyan]CloudCompliance — {framework.upper()} Evidence Report[/bold cyan]\n"
@@ -241,6 +241,23 @@ def print_report(results: dict, resources: list, output_path: Path = None, frame
 
     save_markdown(results, resources, score, pass_count, framework, output_dir=out_dir)
 
+    if pdf:
+        try:
+            from cloudcompliance.pdf_report import generate_pdf_report
+            pdf_path = out_dir / f"{framework}_compliance_report.pdf"
+            generate_pdf_report(
+                results=results,
+                resources=resources,
+                score=score,
+                pass_count=pass_count,
+                framework=framework,
+                output_path=pdf_path,
+                tfstate_path=tfstate_path,
+            )
+            console.print(f"[green]Executive PDF report → {pdf_path}[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not generate PDF report: {e}[/yellow]")
+
     from cloudcompliance.history import save_score
     save_score(target_output_path)
     # Slack notification
@@ -248,14 +265,14 @@ def print_report(results: dict, resources: list, output_path: Path = None, frame
     notify_compliance_score(score, pass_count, len(results), len(resources))
 
 
-def run(tfstate_path: str = None, output_path: str = None, framework: str = "soc2", provider: str = "auto", output_dir: Path = None):
+def run(tfstate_path: str = None, output_path: str = None, framework: str = "soc2", provider: str = "auto", output_dir: Path = None, pdf: bool = False):
     resolved_state = Path(tfstate_path) if tfstate_path else get_default_tfstate_path()
     console.print(f"[dim]Reading state from: {resolved_state}[/dim]")
     tfstate = load_tfstate(str(resolved_state))
     resources = extract_resources(tfstate)
     controls = load_controls(framework)
     results = evaluate_controls(resources, controls, provider=provider)
-    print_report(results, resources, output_path=Path(output_path) if output_path else None, framework=framework, output_dir=output_dir)
+    print_report(results, resources, output_path=Path(output_path) if output_path else None, framework=framework, output_dir=output_dir, pdf=pdf, tfstate_path=str(resolved_state))
 
 
 def main():

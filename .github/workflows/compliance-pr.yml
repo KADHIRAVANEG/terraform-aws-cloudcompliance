@@ -1,0 +1,30 @@
+name: "CloudCompliance PR Audit"
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '**.tf'
+      - '**.tfstate'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  compliance-audit:
+    name: Evaluate Compliance Guardrails
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run CloudCompliance PR Guard
+        uses: ./
+        with:
+          tfstate-path: 'terraform/terraform.tfstate'
+          framework: 'soc2'
+          min-score: '80'
+          fail-on-regression: 'true'
+          post-comment: 'true'
+          github-token: ${{ secrets.GITHUB_TOKEN }}

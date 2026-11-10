@@ -55,9 +55,13 @@ cloudcompliance drift
 cloudcompliance serve   # → http://localhost:8080
 ```
 
-## What's New in v2.0 (Advanced Features)
+## What's New in v2.0 & v2.1 (Advanced Features)
 
-- **Multi-Framework Support:** In addition to SOC2, inherently supports HIPAA and PCI-DSS using a newly decoupled JSON rule engine (`controls.json`).
+- **Signed Executive Auditor PDF Reports (`--pdf`):** Generates formal, audit-ready PDF reports with SOC2/HIPAA/PCI-DSS score badges, SHA-256 cryptographic evidence fingerprints, and auditor sign-off blocks.
+- **GitHub PR Compliance Bot & Action:** Turn compliance into an automated PR guard. Compares base vs. PR compliance scores, blocks regressions, and posts interactive visual Markdown comments directly to PRs.
+- **Live Agentless AWS Scanner (CSPM `scan --live`):** Connects directly to AWS APIs via `boto3` to audit real-world infrastructure posture without requiring a `terraform.tfstate` file.
+- **Interactive Web Dashboard (`cloudcompliance serve`):** Trigger on-demand drift scans directly in the browser, download complete auditor `.zip` bundles with SHA-256 manifests, and switch frameworks (SOC2, HIPAA, PCI-DSS) in real time.
+- **Multi-Framework Support:** In addition to SOC2, inherently supports HIPAA and PCI-DSS using a decoupled JSON rule engine (`controls.json`).
 - **Multi-Cloud Readiness:** Maps standard controls directly to AWS, Azure (`azurerm`), and GCP (`google`) Terraform resources natively.
 - **Custom OPA/Rego Policies:** Write your own business-specific rules in Rego and run them alongside standard controls (`--rego`).
 - **Remote State Support:** Natively pull `terraform.tfstate` dynamically from AWS S3 (`--tfstate s3://...`).
@@ -77,6 +81,17 @@ cloudcompliance report
 cloudcompliance report --framework hipaa
 cloudcompliance report --framework pcidss
 
+# Generate signed Executive Auditor PDF report
+cloudcompliance report --pdf
+
+# Live Agentless AWS Scanner (CSPM mode — no tfstate required)
+cloudcompliance scan --live
+cloudcompliance scan --live --framework hipaa --pdf
+
+# GitHub PR Compliance Guard & Commenter
+cloudcompliance pr-check --min-score 80 --fail-on-regression
+cloudcompliance pr-check --current-state pr.tfstate --base-state base.tfstate --post-comment
+
 # Use remote state (S3) or custom OPA policies
 cloudcompliance report --tfstate s3://my-bucket/terraform.tfstate --rego custom-policy.rego
 
@@ -95,7 +110,7 @@ cloudcompliance history --export
 # Ask AI about your compliance state
 cloudcompliance ask "am I ready for a SOC2 audit?"
 
-# Open live compliance dashboard
+# Open live interactive compliance dashboard
 cloudcompliance serve
 
 # Scheduled drift detection (runs every hour)
@@ -104,7 +119,32 @@ cloudcompliance schedule
 
 ---
 
-## Live Dashboard
+## GitHub Actions PR Compliance Gate
+
+Drop CloudCompliance straight into your GitHub CI/CD pipeline using the reusable GitHub Action:
+
+```yaml
+name: "Compliance PR Guard"
+on: [pull_request]
+
+jobs:
+  compliance-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JOKER-53/terraform-aws-cloudcompliance@v2
+        with:
+          tfstate-path: 'terraform/terraform.tfstate'
+          framework: 'soc2'
+          min-score: '80'
+          fail-on-regression: 'true'
+          post-comment: 'true'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+---
+
+## Live Interactive Dashboard
 
 ![CloudCompliance Live Dashboard](docs/images/dashboard.png)
 
@@ -112,14 +152,13 @@ cloudcompliance schedule
 cloudcompliance serve
 ```
 
-Opens a professional dashboard at `http://localhost:8080` showing:
+Opens an interactive dashboard at `http://localhost:8080` featuring:
 
-- Real-time compliance score ring
-- All 10 SOC2 controls with pass/fail status
-- Drift findings with PR links
-- Compliance score history chart
-- Auto-remediation actions log
-- Auto-refreshes every 30 seconds
+- **Framework Switcher:** Seamlessly toggle between SOC 2 Type II, HIPAA, and PCI-DSS views.
+- **On-Demand Drift Scanning:** Click "Run Drift Scan" to trigger real-time AWS drift analysis.
+- **Download Audit Bundle:** Download complete `.zip` package with JSON evidence, Markdown reports, executive PDF, and cryptographic SHA-256 manifest.
+- **Real-time Compliance Score Ring:** Visual compliance gauge with breakdown by control.
+- **Auto-Remediation Log:** Live tracking of automated fixes and PRs.
 
 ---
 
