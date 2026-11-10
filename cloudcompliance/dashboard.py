@@ -82,8 +82,8 @@ def load_history() -> list:
 
 
 @app.get("/api/status")
-def get_status(framework: str = Query(default="soc2")):
-    fw = framework.lower()
+def get_status(framework: str = "soc2"):
+    fw = str(framework).lower()
     report = load_json(COMPLIANCE_DIR / f"{fw}_compliance_report.json")
     if not report and fw == "soc2":
         report = load_json(COMPLIANCE_DIR / "compliance_report.json")
