@@ -213,7 +213,7 @@ def generate_pdf_report(
             Paragraph("<b>Assessed Scope:</b>", meta_style),
             Paragraph("AWS Cloud Infrastructure (IaC Baseline)", meta_style),
             Paragraph("<b>Auditor Tool:</b>", meta_style),
-            Paragraph("CloudCompliance Engine v2.0.0", meta_style),
+            Paragraph("CloudCompliance Engine v2.1.0", meta_style),
         ],
         [
             Paragraph("<b>SHA-256 Fingerprint:</b>", meta_style),

@@ -541,6 +541,7 @@ version = "1.5.0"
 
 | Version | What's new |
 |---------|-----------|
+| v2.1.0 | Executive auditor PDF report (`--pdf`), GitHub PR compliance bot & action (`pr-check`), Live agentless AWS scanner (`scan --live`), and interactive web dashboard controls (on-demand drift & audit bundle zip download) |
 | v2.0.0 | Multi-cloud, HIPAA/PCI-DSS, OPA/Rego custom policies, S3 remote state, TF 1.5 import generation, and EventBridge real-time scanning |
 | v1.6.0 | Slack notifications + scheduled drift detection |
 | v1.5.0 | Live dashboard — `cloudcompliance serve` |

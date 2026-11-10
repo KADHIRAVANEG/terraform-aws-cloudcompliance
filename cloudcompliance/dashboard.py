@@ -34,7 +34,7 @@ def get_compliance_dir() -> Path:
 
 COMPLIANCE_DIR = get_compliance_dir()
 
-app = FastAPI(title="CloudCompliance Interactive Dashboard", version="2.0.0")
+app = FastAPI(title="CloudCompliance Interactive Dashboard", version="2.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -182,7 +182,7 @@ def download_audit_bundle():
     timestamp_str = datetime.now().strftime("%Y%m%d-%H%M%S")
     manifest = {
         "generated_at": datetime.now().isoformat(),
-        "platform": "CloudCompliance v2.0.0",
+        "platform": "CloudCompliance v2.1.0",
         "scope": "AWS Cloud Security & Regulatory Compliance",
         "files": {},
     }
