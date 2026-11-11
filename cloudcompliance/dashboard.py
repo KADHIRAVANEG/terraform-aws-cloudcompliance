@@ -119,18 +119,30 @@ def load_json(path: Path) -> dict:
     return {}
 
 
-def load_history() -> list:
+def load_history(framework: str = "soc2") -> list:
     db_path = COMPLIANCE_DIR / "history.db"
     if not db_path.exists():
         return []
     try:
         conn = sqlite3.connect(str(db_path))
-        rows = conn.execute("""
-            SELECT timestamp, score, controls_passing, controls_total, resources_count
-            FROM compliance_history
-            ORDER BY timestamp ASC
-            LIMIT 30
-        """).fetchall()
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(compliance_history)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if "framework" in columns:
+            rows = conn.execute("""
+                SELECT timestamp, score, controls_passing, controls_total, resources_count, framework
+                FROM compliance_history
+                WHERE LOWER(framework) = ?
+                ORDER BY timestamp ASC
+                LIMIT 30
+            """, (framework.lower(),)).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT timestamp, score, controls_passing, controls_total, resources_count
+                FROM compliance_history
+                ORDER BY timestamp ASC
+                LIMIT 30
+            """).fetchall()
         conn.close()
         return [
             {
@@ -138,7 +150,8 @@ def load_history() -> list:
                 "score": r[1],
                 "controls_passing": r[2],
                 "controls_total": r[3],
-                "resources_count": r[4]
+                "resources_count": r[4],
+                "framework": r[5] if len(r) > 5 else "soc2",
             }
             for r in rows
         ]
@@ -177,7 +190,7 @@ def get_status(framework: str = "soc2", request: Request = None):
 
     drift = load_json(COMPLIANCE_DIR / "drift_report.json")
     remediation = load_json(COMPLIANCE_DIR / "remediation_log.json")
-    history = load_history()
+    history = load_history(framework=fw)
 
     return JSONResponse({
         "generated_at": datetime.now().isoformat(),

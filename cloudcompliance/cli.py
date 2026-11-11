@@ -251,6 +251,12 @@ def main():
 
     history_parser = subparsers.add_parser("history", help="Show compliance score history")
     history_parser.add_argument(
+        "--framework",
+        default=None,
+        choices=["soc2", "hipaa", "pcidss"],
+        help="Filter score history by compliance framework (default: all)"
+    )
+    history_parser.add_argument(
         "--limit",
         type=int,
         default=10,
@@ -377,9 +383,15 @@ def main():
 
     elif args.command == "history":
         from cloudcompliance.history import show_history, export_history
-        show_history(limit=args.limit)
-        if args.export:
-            export_history()
+        fw = getattr(args, "framework", None)
+        if fw:
+            show_history(limit=args.limit, framework=fw)
+            if args.export:
+                export_history(framework=fw)
+        else:
+            show_history(limit=args.limit)
+            if args.export:
+                export_history()
 
     elif args.command == "ask":
         from cloudcompliance.assistant import main as ask_main

@@ -280,7 +280,7 @@ def print_report(results: dict, resources: list, output_path: Path = None, frame
             console.print(f"[yellow]Warning: Could not generate SARIF report: {e}[/yellow]")
 
     from cloudcompliance.history import save_score
-    save_score(target_output_path)
+    save_score(target_output_path, framework=framework)
     # Multi-channel notification
     from cloudcompliance.notifications import notify_compliance_score
     notify_compliance_score(score, pass_count, len(results), len(resources), framework=framework)

@@ -42,6 +42,7 @@ def get_db(db_path: Path = None) -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS compliance_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT NOT NULL,
+            framework TEXT NOT NULL DEFAULT 'soc2',
             score INTEGER NOT NULL,
             controls_passing INTEGER NOT NULL,
             controls_total INTEGER NOT NULL,
@@ -49,12 +50,18 @@ def get_db(db_path: Path = None) -> sqlite3.Connection:
             report_json TEXT NOT NULL
         )
     """)
+    # Automatic migration: add framework column if missing in older database
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(compliance_history)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "framework" not in columns:
+        conn.execute("ALTER TABLE compliance_history ADD COLUMN framework TEXT NOT NULL DEFAULT 'soc2'")
     conn.commit()
     return conn
 
 
-def save_score(report_path: Path, db_path: Path = None):
-    """Save compliance score from report JSON to history database."""
+def save_score(report_path: Path, db_path: Path = None, framework: str = "soc2"):
+    """Save compliance score from report JSON to history database with framework isolation."""
     report_file = Path(report_path)
     if not report_file.exists():
         console.print(f"[red]Error: report not found at {report_file}[/red]")
@@ -63,6 +70,7 @@ def save_score(report_path: Path, db_path: Path = None):
     with open(report_file) as f:
         report = json.load(f)
 
+    fw = (report.get("framework") or framework or "soc2").lower()
     score = report.get("compliance_score", 0)
     total_resources = report.get("total_resources", 0)
     controls = report.get("controls", {})
@@ -74,10 +82,11 @@ def save_score(report_path: Path, db_path: Path = None):
     conn = get_db(db_path=db_path)
     conn.execute("""
         INSERT INTO compliance_history
-        (timestamp, score, controls_passing, controls_total, resources_count, report_json)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (timestamp, framework, score, controls_passing, controls_total, resources_count, report_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().isoformat(),
+        fw,
         score,
         controls_passing,
         controls_total,
@@ -87,37 +96,50 @@ def save_score(report_path: Path, db_path: Path = None):
     conn.commit()
     conn.close()
 
-    console.print(f"[dim]Score saved to history: {score}% ({controls_passing}/{controls_total} controls)[/dim]")
+    console.print(f"[dim]Score saved to history ({fw.upper()}): {score}% ({controls_passing}/{controls_total} controls)[/dim]")
 
 
-def show_history(limit: int = 10, db_path: Path = None):
-    """Display compliance score history table."""
+def show_history(limit: int = 10, db_path: Path = None, framework: str = None):
+    """Display compliance score history table with optional framework filtering."""
     conn = get_db(db_path=db_path)
-    rows = conn.execute("""
-        SELECT timestamp, score, controls_passing, controls_total, resources_count
-        FROM compliance_history
-        ORDER BY timestamp DESC
-        LIMIT ?
-    """, (limit,)).fetchall()
+    if framework:
+        fw = framework.lower()
+        rows = conn.execute("""
+            SELECT timestamp, score, controls_passing, controls_total, resources_count, framework
+            FROM compliance_history
+            WHERE LOWER(framework) = ?
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """, (fw, limit)).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT timestamp, score, controls_passing, controls_total, resources_count, framework
+            FROM compliance_history
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
     conn.close()
 
     if not rows:
+        fw_msg = f" for '{framework.upper()}'" if framework else ""
         console.print(Panel.fit(
-            "[yellow]No history yet — run 'cloudcompliance report' first[/yellow]",
+            f"[yellow]No history yet{fw_msg} — run 'cloudcompliance report' first[/yellow]",
             border_style="yellow"
         ))
         return
 
+    fw_title = f"{framework.upper()} " if framework else "Multi-Framework "
     console.print()
     console.print(Panel.fit(
-        "[bold cyan]CloudCompliance — Score History[/bold cyan]\n"
-        f"[dim]SOC2 Type II evidence timeline — last {len(rows)} entries[/dim]",
+        f"[bold cyan]CloudCompliance — {fw_title}Score History[/bold cyan]\n"
+        f"[dim]Audit evidence timeline — last {len(rows)} entries[/dim]",
         border_style="cyan"
     ))
     console.print()
 
     table = Table(box=box.ROUNDED, show_header=True, header_style="bold magenta")
-    table.add_column("Date", style="cyan", width=20)
+    table.add_column("Date", style="cyan", width=18)
+    table.add_column("Framework", style="bold blue", width=10)
     table.add_column("Score", width=8)
     table.add_column("Controls", width=12)
     table.add_column("Resources", width=10)
@@ -125,7 +147,7 @@ def show_history(limit: int = 10, db_path: Path = None):
 
     prev_score = None
     for i, row in enumerate(reversed(rows)):
-        timestamp, score, passing, total, resources = row
+        timestamp, score, passing, total, resources, row_fw = row
         dt = datetime.fromisoformat(timestamp).strftime("%Y-%m-%d %H:%M")
 
         score_color = "green" if score == 100 else "yellow" if score >= 70 else "red"
@@ -142,7 +164,7 @@ def show_history(limit: int = 10, db_path: Path = None):
         else:
             trend = "[dim]→ 0%[/dim]"
 
-        table.add_row(dt, score_str, controls_str, str(resources), trend)
+        table.add_row(dt, row_fw.upper(), score_str, controls_str, str(resources), trend)
         prev_score = score
 
     console.print(table)
@@ -162,22 +184,33 @@ def show_history(limit: int = 10, db_path: Path = None):
     ))
 
 
-def export_history(output_path: Path = None, db_path: Path = None):
-    """Export history as JSON for auditors."""
+def export_history(output_path: Path = None, db_path: Path = None, framework: str = None):
+    """Export history as JSON for auditors with framework isolation."""
     conn = get_db(db_path=db_path)
-    rows = conn.execute("""
-        SELECT timestamp, score, controls_passing, controls_total, resources_count
-        FROM compliance_history
-        ORDER BY timestamp ASC
-    """).fetchall()
+    if framework:
+        fw = framework.lower()
+        rows = conn.execute("""
+            SELECT timestamp, score, controls_passing, controls_total, resources_count, framework
+            FROM compliance_history
+            WHERE LOWER(framework) = ?
+            ORDER BY timestamp ASC
+        """, (fw,)).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT timestamp, score, controls_passing, controls_total, resources_count, framework
+            FROM compliance_history
+            ORDER BY timestamp ASC
+        """).fetchall()
     conn.close()
 
     data = {
         "exported_at": datetime.now().isoformat(),
+        "framework_scope": framework.upper() if framework else "ALL",
         "entry_count": len(rows),
         "entries": [
             {
                 "timestamp": r[0],
+                "framework": r[5] if len(r) > 5 else "soc2",
                 "score": r[1],
                 "controls_passing": r[2],
                 "controls_total": r[3],
@@ -188,7 +221,8 @@ def export_history(output_path: Path = None, db_path: Path = None):
     }
 
     if output_path is None:
-        output_path = get_default_compliance_dir() / "history_export.json"
+        fname = f"{framework.lower()}_history_export.json" if framework else "history_export.json"
+        output_path = get_default_compliance_dir() / fname
     else:
         output_path = Path(output_path)
 
