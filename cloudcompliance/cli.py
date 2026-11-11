@@ -268,12 +268,25 @@ def main():
         help="Export history as JSON for auditors"
     )
 
+    metrics_parser = subparsers.add_parser("metrics", help="Export Prometheus metrics to stdout")
+
     ask_parser = subparsers.add_parser("ask", help="Ask AI about your compliance state")
     ask_parser.add_argument("question", help="Your compliance question")
     ask_parser.add_argument(
         "--api-key",
         default=None,
-        help="NVIDIA NIM API key (or set NVIDIA_API_KEY env var)"
+        help="API key for selected LLM provider (or set env var)"
+    )
+    ask_parser.add_argument(
+        "--provider",
+        choices=["openai", "anthropic", "nvidia", "ollama", "bedrock", "offline"],
+        default=None,
+        help="LLM provider (openai, anthropic, nvidia, ollama, bedrock, offline)"
+    )
+    ask_parser.add_argument(
+        "--model",
+        default=None,
+        help="Model ID (e.g. gpt-4o-mini, claude-3-5-sonnet, llama3.2)"
     )
 
     remediate_parser = subparsers.add_parser("remediate", help="Auto-remediate drift findings")
@@ -393,9 +406,18 @@ def main():
             if args.export:
                 export_history()
 
+    elif args.command == "metrics":
+        from cloudcompliance.metrics import generate_prometheus_metrics
+        print(generate_prometheus_metrics(output_dir), end="")
+
     elif args.command == "ask":
         from cloudcompliance.assistant import main as ask_main
-        ask_main(args.question, args.api_key)
+        ask_main(
+            args.question,
+            api_key=args.api_key,
+            provider=getattr(args, "provider", None),
+            model=getattr(args, "model", None),
+        )
 
     elif args.command == "remediate":
         from cloudcompliance.remediation import RemediationEngine

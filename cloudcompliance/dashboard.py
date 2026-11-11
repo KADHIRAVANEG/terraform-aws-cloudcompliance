@@ -98,7 +98,7 @@ def get_compliance_dir() -> Path:
 
 COMPLIANCE_DIR = get_compliance_dir()
 
-app = FastAPI(title="CloudCompliance Interactive Dashboard", version="2.2.0")
+app = FastAPI(title="CloudCompliance Interactive Dashboard", version="2.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -310,6 +310,15 @@ def download_audit_bundle(request: Request = None):
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{bundle_filename}"'},
     )
+
+
+@app.get("/metrics")
+def get_metrics(request: Request = None):
+    """Expose real-time compliance metrics in Prometheus exposition format."""
+    verify_token(request)
+    from cloudcompliance.metrics import generate_prometheus_metrics
+    content = generate_prometheus_metrics(COMPLIANCE_DIR)
+    return Response(content=content, media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 @app.get("/", response_class=HTMLResponse)

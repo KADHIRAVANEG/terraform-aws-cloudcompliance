@@ -73,13 +73,14 @@ def load_tfstate(path: str) -> dict:
 def extract_resources(tfstate: dict) -> list:
     resources = []
     for resource in tfstate.get("resources", []):
+        instances = resource.get("instances", [])
+        attrs = instances[0].get("attributes", {}) if instances else {}
         resources.append({
             "type": resource.get("type"),
             "name": resource.get("name"),
             "module": resource.get("module", "root"),
-            "tags": resource.get("instances", [{}])[0]
-                          .get("attributes", {})
-                          .get("tags", {}),
+            "attributes": attrs,
+            "tags": attrs.get("tags") or {},
         })
     return resources
 
@@ -96,8 +97,63 @@ def get_resource_provider(res_type: str) -> str:
     return "other"
 
 
+def evaluate_deep_attributes(resources: list) -> dict:
+    """
+    Inspect individual resource attributes for security violations and compliance gaps.
+    Evaluates individual configurations rather than mere resource type existence.
+    """
+    violations_by_control = {}
+
+    def add_violation(control_id: str, message: str):
+        violations_by_control.setdefault(control_id, []).append(message)
+
+    for r in resources:
+        res_type = r.get("type", "")
+        res_name = r.get("name", "unnamed")
+        attrs = r.get("attributes") or {}
+
+        # 1. CC6.1 Logical Access / Boundary Exposure
+        if res_type == "aws_security_group":
+            ingress_rules = attrs.get("ingress", []) or []
+            for rule in ingress_rules:
+                cidrs = rule.get("cidr_blocks", []) or []
+                if "0.0.0.0/0" in cidrs:
+                    from_port = rule.get("from_port")
+                    to_port = rule.get("to_port")
+                    if from_port in (22, 3389) or to_port in (22, 3389):
+                        add_violation("CC6.1", f"Security group '{res_name}' allows unrestricted ingress on management port ({from_port}-{to_port}) from 0.0.0.0/0")
+                    elif from_port in (3306, 5432, 27017, 6379):
+                        add_violation("CC6.1", f"Security group '{res_name}' allows unrestricted database ingress ({from_port}) from 0.0.0.0/0")
+
+        if res_type == "aws_db_instance":
+            if attrs.get("publicly_accessible") is True:
+                add_violation("CC6.1", f"RDS database '{res_name}' is configured as publicly accessible")
+
+        # 2. CC6.7 Encryption at Rest & Key Management
+        if res_type == "aws_kms_key":
+            if attrs.get("enable_key_rotation") is False:
+                add_violation("CC6.7", f"KMS key '{res_name}' has automatic cryptographic rotation disabled")
+
+        if res_type == "aws_db_instance":
+            if attrs.get("storage_encrypted") is False:
+                add_violation("CC6.7", f"RDS database '{res_name}' has storage encryption disabled")
+
+        if res_type == "aws_ebs_volume":
+            if attrs.get("encrypted") is False:
+                add_violation("CC6.7", f"EBS volume '{res_name}' is unencrypted at rest")
+
+        # 3. A1.1 Availability & Automated Backups
+        if res_type == "aws_db_instance":
+            retention = attrs.get("backup_retention_period", 1)
+            if retention is not None and int(retention) == 0:
+                add_violation("A1.1", f"RDS database '{res_name}' has automated backup retention set to 0 days (disabled)")
+
+    return violations_by_control
+
+
 def evaluate_controls(resources: list, controls: dict, provider: str = "auto") -> dict:
     found_types = set(r["type"] for r in resources if r.get("type"))
+    deep_violations = evaluate_deep_attributes(resources)
 
     # Determine which cloud providers to evaluate
     if provider and provider != "auto" and provider != "all":
@@ -123,9 +179,10 @@ def evaluate_controls(resources: list, controls: dict, provider: str = "auto") -
 
         matched = [t for t in effective_resources if t in found_types]
         missing = [t for t in effective_resources if t not in found_types]
+        violations = deep_violations.get(control_id, [])
 
         if len(matched) == len(effective_resources) and len(effective_resources) > 0:
-            status = "PASS"
+            status = "PASS" if not violations else "PARTIAL"
         elif len(matched) > 0:
             status = "PARTIAL"
         else:
@@ -137,6 +194,7 @@ def evaluate_controls(resources: list, controls: dict, provider: str = "auto") -
             "status": status,
             "matched": matched,
             "missing": missing,
+            "violations": violations,
         }
     return results
 
@@ -223,6 +281,14 @@ def print_report(results: dict, resources: list, output_path: Path = None, frame
         for control_id, result in missing_any:
             for m in result["missing"]:
                 console.print(f"  [dim]{control_id}[/dim] → [red]{m}[/red]")
+
+    violations_any = [(cid, r) for cid, r in results.items() if r.get("violations")]
+    if violations_any:
+        console.print()
+        console.print("[bold red]🚨 Deep Resource Configuration Violations Detected:[/bold red]")
+        for control_id, result in violations_any:
+            for v in result["violations"]:
+                console.print(f"  [dim]{control_id}[/dim] → [red]{v}[/red]")
 
     output = {
         "generated_at": datetime.now().isoformat(),

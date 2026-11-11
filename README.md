@@ -55,7 +55,16 @@ cloudcompliance drift
 cloudcompliance serve   # → http://localhost:8080
 ```
 
-## What's New in v2.2 (Enterprise Expansion)
+## What's New in v2.3 (Observability & Multi-Cloud Upgrade)
+
+- **📊 Prometheus & OpenTelemetry `/metrics` Exporter:** Emits real-time compliance scores, controls health, drift counts, and remediation stats in standard Prometheus exposition format (`cloudcompliance serve` & `cloudcompliance metrics`). Includes ready-to-import Grafana Dashboard JSON (`dashboards/grafana_compliance_dashboard.json`).
+- **🌍 True Multi-Cloud Starter IaC (`cloudcompliance init`):** Generates production-ready, compliance-first Terraform configurations for **AWS**, **Azure** (Key Vault, Storage Account TLS 1.2, NSGs, Log Analytics), and **GCP** (Cloud KMS KeyRing, GCS bucket versioning, custom VPC, Cloud Audit logs).
+- **🤖 Multi-LLM AI Assistant (`cloudcompliance ask`):** Flexible, privacy-first assistant supporting **OpenAI** (`gpt-4o`), **Anthropic Claude** (`claude-3-5-sonnet`), **AWS Bedrock**, local air-gapped **Ollama**, **NVIDIA NIM**, and deterministic offline regulatory guidance.
+- **🔍 Deep Instance-Level Resource Attribute Evaluator:** Inspects actual security configurations on individual resources (open SSH/RDP/database security groups, unencrypted RDS storage, unencrypted EBS volumes, publicly accessible databases, and disabled KMS key rotation).
+
+---
+
+## Features Introduced in v2.2
 
 - **🛡 GitHub Code Scanning & SARIF Export (`--sarif` / `--format sarif`):** Generates OASIS SARIF v2.1.0 output for compliance violations and drift findings for native integration into GitHub's Security > Code Scanning Alerts dashboard (`github/codeql-action/upload-sarif`).
 - **⚡ Interactive Starter Wizard (`cloudcompliance init`):** Interactive terminal wizard that scaffolds compliant `main.tf`, `variables.tf`, `terraform.tfvars`, and `.env.example` pre-configured for your provider, framework, and environment.
@@ -74,6 +83,8 @@ cloudcompliance serve   # → http://localhost:8080
 # Interactive Starter Wizard (Bootstraps tailored, compliant IaC)
 cloudcompliance init
 cloudcompliance init --provider aws --framework soc2 --env prod --non-interactive
+cloudcompliance init --provider azure --framework hipaa --env prod --non-interactive
+cloudcompliance init --provider gcp --framework pcidss --env prod --non-interactive
 
 # Deploy baseline infrastructure
 make deploy
@@ -82,6 +93,14 @@ make deploy
 cloudcompliance report
 cloudcompliance report --framework hipaa
 cloudcompliance report --framework pcidss
+
+# Export Prometheus metrics
+cloudcompliance metrics
+
+# Ask Multi-LLM Assistant
+cloudcompliance ask "What do I need to achieve 100% SOC2 compliance?"
+cloudcompliance ask "Is our infrastructure compliant?" --provider ollama
+cloudcompliance ask "How do I fix drift findings?" --provider openai --model gpt-4o
 
 # Generate signed Executive Auditor PDF report
 cloudcompliance report --pdf
