@@ -74,7 +74,8 @@ resource "aws_iam_role_policy_attachment" "app_role" {
 
 # SNS alert for root account usage
 resource "aws_sns_topic" "root_alert" {
-  name = "${var.project_name}-root-account-alert"
+  name              = "${var.project_name}-root-account-alert"
+  kms_master_key_id = "alias/aws/sns"
 
   tags = {
     Name        = "${var.project_name}-root-account-alert"

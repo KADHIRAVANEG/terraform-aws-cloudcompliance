@@ -14,3 +14,9 @@ variable "lambda_zip_path" {
   type        = string
   default     = "cloudcompliance.zip"
 }
+
+variable "kms_key_arn" {
+  description = "Optional KMS Key ARN to encrypt Lambda environment variables"
+  type        = string
+  default     = ""
+}
