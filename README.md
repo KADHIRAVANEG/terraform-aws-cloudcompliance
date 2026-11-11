@@ -1,8 +1,8 @@
-![SOC2 Compliance](https://github.com/KADHIRAVANEG/cloudcompliance/actions/workflows/compliance.yml/badge.svg)
+![SOC2 Compliance](https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/actions/workflows/compliance.yml/badge.svg)
 [![Terraform Registry](https://img.shields.io/badge/Terraform%20Registry-cloudcompliance-7B42BC?logo=terraform)](https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws/latest)
 [![PyPI version](https://img.shields.io/pypi/v/cloudcompliance?color=blue)](https://pypi.org/project/cloudcompliance/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/cloudcompliance)](https://pypi.org/project/cloudcompliance/)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io-2496ED?logo=docker)](https://github.com/KADHIRAVANEG/cloudcompliance/pkgs/container/cloudcompliance)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io-2496ED?logo=docker)](https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/pkgs/container/cloudcompliance)
 ![Terraform](https://img.shields.io/badge/Terraform-1.15.6-7B42BC?logo=terraform)
 ![LocalStack](https://img.shields.io/badge/LocalStack-3.4.0-000000?logo=amazon-aws)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)
@@ -40,7 +40,7 @@ Every SOC2 control is provisioned automatically at infrastructure creation time.
 pip install cloudcompliance
 
 # 2. Clone the repo
-git clone https://github.com/KADHIRAVANEG/cloudcompliance.git
+git clone https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance.git
 cd terraform-aws-cloudcompliance
 cp .env.example .env  # add your API keys
 
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: JOKER-53/terraform-aws-cloudcompliance@v2
+      - uses: KADHIRAVANEG/terraform-aws-cloudcompliance@v2.3.0
         with:
           tfstate-path: 'terraform/terraform.tfstate'
           framework: 'soc2'
@@ -307,7 +307,7 @@ $ cloudcompliance drift
 🟡 HIGH  cloudcompliance-encrypted-data  DELETED
 
 $ cloudcompliance remediate
-📋 PR opened: https://github.com/KADHIRAVANEG/cloudcompliance/pull/32
+📋 PR opened: https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/pull/32
 Remediation log saved → compliance/remediation_log.json
 ```
 
@@ -408,7 +408,7 @@ NVIDIA_API_KEY=your-nvidia-nim-key
 
 # Required for auto-remediation PRs
 GITHUB_TOKEN=your-github-token
-GITHUB_REPO=KADHIRAVANEG/cloudcompliance
+GITHUB_REPO=KADHIRAVANEG/terraform-aws-cloudcompliance
 
 # LocalStack endpoint (leave as-is for local dev)
 LOCALSTACK_ENDPOINT=http://localhost:4566
@@ -610,6 +610,8 @@ version = "1.5.0"
 
 | Version | What's new |
 |---------|-----------|
+| v2.3.0 | Prometheus & OpenTelemetry `/metrics` exporter, Grafana Dashboard template, True Multi-Cloud Starter IaC (Azure & GCP), Multi-LLM Assistant (`cloudcompliance ask` with OpenAI/Claude/Bedrock/Ollama/NVIDIA/Offline), Deep instance-level resource attribute evaluation |
+| v2.2.0 | GitHub Code Scanning & SARIF exporter (`--sarif`), Interactive starter wizard (`cloudcompliance init`), Multi-region live CSPM scanning (`--all-regions`), Multi-channel alerting (Teams, Discord, Webhooks) |
 | v2.1.0 | Executive auditor PDF report (`--pdf`), GitHub PR compliance bot & action (`pr-check`), Live agentless AWS scanner (`scan --live`), and interactive web dashboard controls (on-demand drift & audit bundle zip download) |
 | v2.0.0 | Multi-cloud, HIPAA/PCI-DSS, OPA/Rego custom policies, S3 remote state, TF 1.5 import generation, and EventBridge real-time scanning |
 | v1.6.0 | Slack notifications + scheduled drift detection |
@@ -621,8 +623,11 @@ version = "1.5.0"
 | v1.0.0 | Initial release — SOC2 baseline IaC |
 ---
 
-## Author
+## Author & Contact
 
-**Kadhiravan E.G.** — Cybersecurity student  
-GitHub: [@KADHIRAVANEG](https://github.com/KADHIRAVANEG)  
-Website: [CloudCompliance](https://joker-53.github.io/terraform-aws-cloudcompliance)
+**Kadhiravan E.G.** — Cybersecurity student & DevSecOps Engineer  
+- **Email**: [kadhiravanegk@gmail.com](mailto:kadhiravanegk@gmail.com)  
+- **GitHub**: [@KADHIRAVANEG](https://github.com/KADHIRAVANEG)  
+- **Website & Documentation**: [https://kadhiravaneg.github.io/terraform-aws-cloudcompliance/](https://kadhiravaneg.github.io/terraform-aws-cloudcompliance/)  
+- **Security Policy**: [SECURITY.md](SECURITY.md)  
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)

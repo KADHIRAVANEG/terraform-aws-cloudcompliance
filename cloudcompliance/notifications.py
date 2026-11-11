@@ -104,7 +104,7 @@ def send_discord(title: str, description: str, color_hex: str = "#1D9E75", field
 
     payload = {
         "username": "CloudCompliance Bot",
-        "avatar_url": "https://raw.githubusercontent.com/KADHIRAVANEG/cloudcompliance/main/docs/favicon.ico",
+        "avatar_url": "https://raw.githubusercontent.com/KADHIRAVANEG/terraform-aws-cloudcompliance/main/docs/favicon.ico",
         "embeds": [embed],
     }
 
@@ -159,7 +159,7 @@ def dispatch_alert(
                 "text": summary,
                 "fields": fields or [],
                 "footer": "CloudCompliance Alerting",
-                "footer_icon": "https://raw.githubusercontent.com/KADHIRAVANEG/cloudcompliance/main/docs/favicon.ico",
+                "footer_icon": "https://raw.githubusercontent.com/KADHIRAVANEG/terraform-aws-cloudcompliance/main/docs/favicon.ico",
                 "ts": int(datetime.now().timestamp()),
             }
         ]

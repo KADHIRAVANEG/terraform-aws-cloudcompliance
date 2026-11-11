@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 LABEL maintainer="Kadhiravan E.G."
 LABEL description="CloudCompliance — SOC2 Evidence Report Generator"
-LABEL org.opencontainers.image.source=https://github.com/KADHIRAVANEG/cloudcompliance
+LABEL org.opencontainers.image.source=https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance
 
 # Create dedicated non-root system user and group (CIS Docker Benchmark 4.1)
 RUN groupadd -g 10001 compliance && \

@@ -110,7 +110,7 @@ footer a{color:var(--green)}
     <a href="#remediate">Remediation</a>
     <a href="#history">History</a>
     <a href="#install">Install</a>
-    <a href="https://github.com/KADHIRAVANEG/cloudcompliance">GitHub</a>
+    <a href="https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance">GitHub</a>
   </div>
   <a href="https://pypi.org/project/cloudcompliance/" class="btn btn-primary">pip install</a>
 </nav>
@@ -120,12 +120,12 @@ footer a{color:var(--green)}
   <h1>Provision a <span>compliant AWS</span><br>environment in one command</h1>
   <p class="hero-sub">Infrastructure as Code that deploys 46 AWS resources across 10 SOC2 controls — with drift detection, AI assistant, score history, auto-remediation, signed auditor PDFs, multi-region CSPM scanner, SARIF code scanning, and live dashboard.</p>
   <div class="cta-group">
-    <a href="https://github.com/KADHIRAVANEG/cloudcompliance" class="btn btn-primary">View on GitHub</a>
+    <a href="https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance" class="btn btn-primary">View on GitHub</a>
     <a href="https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws" class="btn btn-outline">Terraform Registry</a>
     <a href="https://pypi.org/project/cloudcompliance/" class="btn btn-outline">PyPI</a>
   </div>
   <div class="badges-row">
-    <img src="https://github.com/KADHIRAVANEG/cloudcompliance/actions/workflows/compliance.yml/badge.svg" alt="CI">
+    <img src="https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/actions/workflows/compliance.yml/badge.svg" alt="CI">
     <img src="https://img.shields.io/pypi/v/cloudcompliance?color=blue" alt="PyPI">
     <img src="https://img.shields.io/badge/Terraform-1.15.6-7B42BC" alt="Terraform">
     <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
@@ -164,7 +164,7 @@ footer a{color:var(--green)}
       <div style="color:#fbbf24">🟡 HIGH &nbsp; cloudcompliance-encrypted-data &nbsp; DELETED</div>
       <br>
       <div><span class="p">$ </span><span class="c">cloudcompliance remediate</span></div>
-      <div class="teal">📋 PR opened: github.com/KADHIRAVANEG/cloudcompliance/pull/32</div>
+      <div class="teal">📋 PR opened: github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/pull/32</div>
       <br>
       <div><span class="p">$ </span><span class="c">cloudcompliance ask "am I ready for SOC2 audit?"</span></div>
       <div class="g">Score is 100%. One drift finding — run remediate to fix.</div>
@@ -262,7 +262,31 @@ footer a{color:var(--green)}
       <div class="feature-icon">🔔</div>
       <div class="feature-title">Multi-Channel Alerts</div>
       <div class="feature-desc">Broadcast real-time compliance regressions and drift findings to Slack, Microsoft Teams, Discord, and PagerDuty webhooks.</div>
-      <span class="feature-tag tag-new">v2.2.0 NEW</span>
+      <span class="feature-tag tag-new">v2.2.0</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Prometheus & Grafana</div>
+      <div class="feature-desc">Standard OpenMetrics / Prometheus exporter on /metrics & CLI, with pre-built Grafana compliance dashboard JSON.</div>
+      <span class="feature-tag tag-new">v2.3.0 NEW</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">☁️</div>
+      <div class="feature-title">Multi-Cloud IaC (Azure & GCP)</div>
+      <div class="feature-desc">Wizard scaffolds production Azure Key Vault, Storage TLS 1.2, GCP KMS KeyRings, VPCs, and audit logging out of the box.</div>
+      <span class="feature-tag tag-new">v2.3.0 NEW</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <div class="feature-title">Multi-LLM AI Assistant</div>
+      <div class="feature-desc">Interactive guidance powered by OpenAI, Anthropic Claude, AWS Bedrock, local air-gapped Ollama, NVIDIA NIM, or offline rules.</div>
+      <span class="feature-tag tag-new">v2.3.0 NEW</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔬</div>
+      <div class="feature-title">Deep Attribute Evaluator</div>
+      <div class="feature-desc">Audits instance attributes: unrestricted 0.0.0.0/0 SSH/RDP, unencrypted RDS/EBS, public DB instances, and KMS key rotation.</div>
+      <span class="feature-tag tag-new">v2.3.0 NEW</span>
     </div>
   </div>
 </section>
@@ -290,7 +314,7 @@ footer a{color:var(--green)}
       <div class="dim">Opening GitHub PRs for 1 high-risk finding(s)...</div>
       <div class="dim">Branch created: cloudcompliance/remediate-...-20260713155023</div>
       <div class="dim">Remediation file committed to branch</div>
-      <div class="teal">📋 PR opened: github.com/KADHIRAVANEG/cloudcompliance/pull/32</div>
+      <div class="teal">📋 PR opened: github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/pull/32</div>
       <div class="dim">Remediation log saved → compliance/remediation_log.json</div>
     </div>
   </div>
@@ -427,19 +451,19 @@ footer a{color:var(--green)}
       <div class="install-icon">🔷</div>
       <div class="install-title">Terraform module</div>
       <div class="install-sub">Use in your existing Terraform project</div>
-      <div class="install-code">source = "KADHIRAVANEG/cloudcompliance/aws"<br>version = "2.0.0"</div>
+      <div class="install-code">source = "KADHIRAVANEG/cloudcompliance/aws"<br>version = "2.3.0"</div>
     </div>
     <div class="install-card">
       <div class="install-icon">🐍</div>
       <div class="install-title">Python CLI</div>
       <div class="install-sub">Full compliance toolkit in your terminal</div>
-      <div class="install-code">pip install cloudcompliance<br><br>cloudcompliance report<br>cloudcompliance drift<br>cloudcompliance history<br>cloudcompliance remediate<br>cloudcompliance ask "..."</div>
+      <div class="install-code">pip install cloudcompliance<br><br>cloudcompliance report<br>cloudcompliance drift<br>cloudcompliance metrics<br>cloudcompliance remediate<br>cloudcompliance ask "..."</div>
     </div>
     <div class="install-card">
       <div class="install-icon">🐳</div>
       <div class="install-title">Docker</div>
       <div class="install-sub">No Python setup required</div>
-      <div class="install-code">docker pull ghcr.io/joker-53/<br>cloudcompliance:latest</div>
+      <div class="install-code">docker pull ghcr.io/kadhiravaneg/<br>cloudcompliance:latest</div>
     </div>
   </div>
 </section>
@@ -479,11 +503,12 @@ footer a{color:var(--green)}
 </section>
 
 <footer>
-  Built by <a href="https://github.com/KADHIRAVANEG">Kadhiravan E.G.</a> · MIT License ·
-  <a href="https://github.com/KADHIRAVANEG/cloudcompliance">GitHub</a> ·
+  Built by <a href="https://github.com/KADHIRAVANEG">Kadhiravan E.G.</a> ·
+  <a href="mailto:kadhiravanegk@gmail.com">kadhiravanegk@gmail.com</a> · MIT License ·
+  <a href="https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance">GitHub</a> ·
   <a href="https://pypi.org/project/cloudcompliance/">PyPI</a> ·
   <a href="https://registry.terraform.io/modules/KADHIRAVANEG/cloudcompliance/aws">Terraform Registry</a> ·
-  <a href="https://github.com/KADHIRAVANEG/cloudcompliance/pkgs/container/cloudcompliance">Docker</a>
+  <a href="https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/pkgs/container/cloudcompliance">Docker</a>
 </footer>
 
 </body>

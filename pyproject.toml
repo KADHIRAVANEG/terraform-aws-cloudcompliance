@@ -34,8 +34,9 @@ dependencies = [
 cloudcompliance = "cloudcompliance.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/KADHIRAVANEG/cloudcompliance"
-Repository = "https://github.com/KADHIRAVANEG/cloudcompliance"
+Homepage = "https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance"
+Repository = "https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance"
+Documentation = "https://kadhiravaneg.github.io/terraform-aws-cloudcompliance/"
 
 [tool.setuptools.packages.find]
 include = ["cloudcompliance*"]
