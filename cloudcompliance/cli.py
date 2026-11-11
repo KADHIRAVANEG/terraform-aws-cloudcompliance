@@ -307,6 +307,11 @@ def main():
         default="127.0.0.1",
         help="Host to bind to (default: 127.0.0.1)"
     )
+    serve_parser.add_argument(
+        "--token",
+        default=None,
+        help="Optional API bearer token to secure dashboard endpoints (or set CLOUDCOMPLIANCE_API_KEY)"
+    )
 
     args = parser.parse_args()
 
@@ -391,7 +396,7 @@ def main():
 
     elif args.command == "serve":
         from cloudcompliance.dashboard import serve
-        serve(host=args.host, port=args.port)
+        serve(host=args.host, port=args.port, token=getattr(args, "token", None))
 
     elif args.command == "schedule":
         from cloudcompliance.scheduler import schedule

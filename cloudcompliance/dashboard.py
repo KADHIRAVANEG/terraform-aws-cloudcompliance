@@ -15,9 +15,73 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request, Header, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+
+
+VALID_FRAMEWORKS = {"soc2", "hipaa", "pcidss"}
+
+
+def sanitize_framework(framework: str) -> str:
+    """Validate and sanitize compliance framework name against whitelist to prevent traversal."""
+    fw = str(framework).strip().lower()
+    if fw not in VALID_FRAMEWORKS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid framework: '{framework}'. Supported: {', '.join(sorted(VALID_FRAMEWORKS))}"
+        )
+    return fw
+
+
+def get_allowed_origins() -> list:
+    """Retrieve allowed CORS origins from environment or default to local development hosts."""
+    env_origins = os.getenv("DASHBOARD_CORS_ORIGINS")
+    if env_origins:
+        return [o.strip() for o in env_origins.split(",") if o.strip()]
+    return [
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+
+def verify_token(
+    request: Optional[Request] = None,
+    authorization: Optional[str] = None,
+    x_api_key: Optional[str] = None,
+):
+    """
+    Verify API access token when CLOUDCOMPLIANCE_API_KEY or DASHBOARD_API_KEY is configured.
+    Supports Bearer header, X-API-Key header, and ?token= query parameter.
+    """
+    expected_token = os.getenv("CLOUDCOMPLIANCE_API_KEY") or os.getenv("DASHBOARD_API_KEY")
+    if not expected_token:
+        return True
+
+    if request is None:
+        # In direct unit tests or internal programmatic calls without request context
+        return True
+
+    # 1. Bearer header
+    auth_val = authorization or request.headers.get("Authorization", "")
+    if auth_val.startswith("Bearer "):
+        token = auth_val.split("Bearer ", 1)[1].strip()
+        if token == expected_token:
+            return True
+
+    # 2. X-API-Key header
+    key_val = x_api_key or request.headers.get("X-API-Key", "")
+    if key_val.strip() == expected_token:
+        return True
+
+    # 3. Query parameter ?token=
+    query_token = request.query_params.get("token", "")
+    if query_token.strip() == expected_token:
+        return True
+
+    raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing API token")
 
 
 def get_compliance_dir() -> Path:
@@ -34,13 +98,14 @@ def get_compliance_dir() -> Path:
 
 COMPLIANCE_DIR = get_compliance_dir()
 
-app = FastAPI(title="CloudCompliance Interactive Dashboard", version="2.1.0")
+app = FastAPI(title="CloudCompliance Interactive Dashboard", version="2.2.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=get_allowed_origins(),
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 
@@ -82,8 +147,9 @@ def load_history() -> list:
 
 
 @app.get("/api/status")
-def get_status(framework: str = "soc2"):
-    fw = str(framework).lower()
+def get_status(framework: str = "soc2", request: Request = None):
+    verify_token(request)
+    fw = sanitize_framework(framework)
     report = load_json(COMPLIANCE_DIR / f"{fw}_compliance_report.json")
     if not report and fw == "soc2":
         report = load_json(COMPLIANCE_DIR / "compliance_report.json")
@@ -138,13 +204,16 @@ def get_status(framework: str = "soc2"):
 
 
 @app.get("/api/framework/{framework_id}")
-def get_framework_report(framework_id: str):
-    return get_status(framework=framework_id)
+def get_framework_report(framework_id: str, request: Request = None):
+    verify_token(request)
+    fw = sanitize_framework(framework_id)
+    return get_status(framework=fw, request=request)
 
 
 @app.post("/api/actions/drift")
-def trigger_drift_scan():
+def trigger_drift_scan(request: Request = None):
     """Trigger real-time infrastructure drift evaluation on-demand."""
+    verify_token(request)
     try:
         from cloudcompliance.report import get_default_tfstate_path
         from cloudcompliance.drift.detector import DriftDetector
@@ -176,8 +245,9 @@ def trigger_drift_scan():
 
 
 @app.get("/api/download/bundle")
-def download_audit_bundle():
+def download_audit_bundle(request: Request = None):
     """Package and download all compliance evidence, reports, state, and hashes as an audit zip bundle."""
+    verify_token(request)
     buf = io.BytesIO()
     timestamp_str = datetime.now().strftime("%Y%m%d-%H%M%S")
     manifest = {
@@ -443,6 +513,20 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:0 1.5r
 
 <script>
 let currentFramework = 'soc2';
+const urlParams = new URLSearchParams(window.location.search);
+let authToken = urlParams.get('token') || localStorage.getItem('cc_dashboard_token') || '';
+if (urlParams.get('token')) {
+  localStorage.setItem('cc_dashboard_token', urlParams.get('token'));
+}
+
+function getAuthHeaders() {
+  const headers = {};
+  if (authToken) {
+    headers['Authorization'] = 'Bearer ' + authToken;
+    headers['X-API-Key'] = authToken;
+  }
+  return headers;
+}
 
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
@@ -461,7 +545,18 @@ function onFrameworkChange(fw) {
 
 async function fetchStatus() {
   try {
-    const res = await fetch('/api/status?framework=' + currentFramework);
+    const url = '/api/status?framework=' + encodeURIComponent(currentFramework) + (authToken ? '&token=' + encodeURIComponent(authToken) : '');
+    const res = await fetch(url, { headers: getAuthHeaders() });
+    if (res.status === 401) {
+      const entered = prompt('This CloudCompliance dashboard is protected with API Token Authentication.\nPlease enter your access token:');
+      if (entered) {
+        authToken = entered.trim();
+        localStorage.setItem('cc_dashboard_token', authToken);
+        return fetchStatus();
+      }
+      showToast('Authentication required (401 Unauthorized)', true);
+      return;
+    }
     const data = await res.json();
     render(data);
   } catch(e) {
@@ -477,7 +572,12 @@ async function triggerDriftScan() {
   showToast('Initiating drift detection scan against AWS APIs...');
 
   try {
-    const res = await fetch('/api/actions/drift', { method: 'POST' });
+    const url = '/api/actions/drift' + (authToken ? '?token=' + encodeURIComponent(authToken) : '');
+    const res = await fetch(url, { method: 'POST', headers: getAuthHeaders() });
+    if (res.status === 401) {
+      showToast('Action unauthorized: Invalid or missing token (401)', true);
+      return;
+    }
     const data = await res.json();
     if (data.status === 'success' || data.status === 'ok') {
       showToast('Drift scan complete: ' + data.drift_count + ' issues detected');
@@ -495,7 +595,8 @@ async function triggerDriftScan() {
 
 function downloadBundle() {
   showToast('Preparing audit evidence bundle .zip...');
-  window.location.href = '/api/download/bundle';
+  const url = '/api/download/bundle' + (authToken ? '?token=' + encodeURIComponent(authToken) : '');
+  window.location.href = url;
 }
 
 function askAiPrompt() {
@@ -582,11 +683,19 @@ setInterval(fetchStatus, 30000);
 </html>"""
 
 
-def serve(host: str = "127.0.0.1", port: int = 8080):
+def serve(host: str = "127.0.0.1", port: int = 8080, token: Optional[str] = None):
     import uvicorn
+    if token:
+        os.environ["CLOUDCOMPLIANCE_API_KEY"] = token
+    has_token = bool(os.getenv("CLOUDCOMPLIANCE_API_KEY") or os.getenv("DASHBOARD_API_KEY"))
+
     print(f"\n  CloudCompliance Interactive Dashboard")
     print(f"  Running at http://{host}:{port}")
     print(f"  Framework switching: SOC2, HIPAA, PCI-DSS")
     print(f"  Actions enabled: On-demand drift scan, Audit bundle download (.zip)")
+    if has_token:
+        print(f"  Security: API Token Authentication [ENABLED]")
+    else:
+        print(f"  Security: Public mode (Tip: set --token <key> or CLOUDCOMPLIANCE_API_KEY)")
     print(f"  Press Ctrl+C to stop\n")
     uvicorn.run(app, host=host, port=port, log_level="warning")
