@@ -15,8 +15,8 @@ We take security seriously. If you discover a security issue, please report it p
 
 ### How to Report
 
-- **Preferred method**: Use [GitHub Private Vulnerability Reporting](https://github.com/KADHIRAVANEG/cloudcompliance/security/advisories) (if enabled)
-- **Alternative**: Email us at `security@yourdomain.com` or `[your-github-username]@users.noreply.github.com`
+- **Preferred method**: Use [GitHub Private Vulnerability Reporting](https://github.com/KADHIRAVANEG/terraform-aws-cloudcompliance/security/advisories) (if enabled)
+- **Alternative**: Email directly to [kadhiravanegk@gmail.com](mailto:kadhiravanegk@gmail.com)
 
 ### What to Include in Your Report
 
